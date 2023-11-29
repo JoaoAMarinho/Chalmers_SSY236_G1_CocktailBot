@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- NOT WORKING -->
+    <!-- Load parameters from YAML file -->
+    <rosparam command="load" file="./src/cocktail_bot/config/loadKnowledge.yaml" />
+
+    <!-- Run the reasoning node -->
+    <node pkg="cocktail_bot" type="reasoning_node" name="reasoning_node" output="screen" args="./src/cocktail_bot/config" />
+</launch>

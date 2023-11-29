@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+  <!-- rosprolog for storing & providing ontology services -->
+  <param name="initial_package" type="string" value="cocktail_bot" />
+  <node name="rosprolog" pkg="rosprolog" type="rosprolog_node" output="screen"/>
+
+  <!-- Launch Map Generator -->
+  <node pkg="cocktail_bot" type="map_generator_node" name="map_generator_node" output="screen" />
+
+  <!-- Launch Percept -->
+  <node pkg="cocktail_bot" type="percept_node" name="percept_node" output="screen" />
+
+  <!-- Launch Controller -->
+  <node pkg="cocktail_bot" type="tiago_control_node" name="tiago_control_node" output="screen" />
+
+</launch>
