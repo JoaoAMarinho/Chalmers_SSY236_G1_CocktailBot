@@ -4,7 +4,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/LGP-FEUP-2023/SC14">
+  <a href="">
     <img src="images/cocktail_bot-logo.png" alt="Logo" width="300">
   </a>
 
@@ -13,7 +13,7 @@
     <br />
     <a href="./docs/">Explore the docs</a>
     ·
-    <a href="https://github.com/JoaoAMarinho/CocktailBot/tree/main/docs">View Demo</a>
+    <a href="./docs/">View Demo</a>
   </p>
 </div>
 
@@ -54,7 +54,7 @@ With this application, users can `todo`. However, it is important to note that t
 
 List of major frameworks/libraries used to build and maintain the application.
 
-For more details, please refer to the project's [Architecture and Design](https://github.com/LGP-FEUP-2023/SC14/tree/main/docs/architecture_design.md).
+For more details, please refer to the project's [Architecture and Design](./docs/architecture_design.md).
 
 
 * [![ROS][ROS]][ROS-url]
