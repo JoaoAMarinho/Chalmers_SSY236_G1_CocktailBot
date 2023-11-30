@@ -10,29 +10,24 @@
 #include <cocktail_bot/UpdateObjectList.h>
 #include <cocktail_bot/SetInitTiagoPose.h>
 
-#include <cctype> //library needed for the toupper function
 
-class WorldInfo
+class Percept
 {
 private:
 
-    std::string subs_topic_name_;            ///< gazebo model state topic name
-    std::string srv_update_obj_name_;        ///< name of the service provided by the map generator node
-    std::string srv_assert_knowledge_name_;  ///< Name of the service to assert knowledge in the ontology
+    std::string subs_topic_name_;             // Gazebo model_states topic name
+    ros::Subscriber sub_gazebo_data_;         // Subscriber gazebo model_states
 
-    ros::Subscriber sub_gazebo_data_;     ///< Subscriber gazebo model_states
-
-    std::vector<std::string> v_seen_obj_;  ///< List of objects seen by the robot and sent to the map generator node
-
-    ros::ServiceClient client_map_generator_; ///< Client to request the object list update in the map generator node
-    ros::ServiceClient client_reasoning_;     ///< Client to assert objects in the knowledge base
-
+    std::string srv_update_obj_name_;         // Name of the service provided by the map generator node
+    ros::ServiceClient client_map_generator_; // Client to request updates to the seen objects in the map generator node
+    
+    std::vector<std::string> v_seen_obj_;     // List of objects seen by the robot and sent to the map generator node
 
 public:
 
-    WorldInfo(ros::NodeHandle& nh)
+    Percept(ros::NodeHandle& nh)
     {
-        ROS_WARN_STREAM("Created world info");
+        ROS_WARN_STREAM("Created Percept Node");
 
         // This objects will not be sent to the Map generator node
         v_seen_obj_.push_back("tiago");
@@ -40,13 +35,13 @@ public:
 
         subs_topic_name_="/gazebo/model_states";
 
-        // create client and wait until service is advertised
+        // Create client and wait until service is advertised
         srv_update_obj_name_="update_object_list";
         client_map_generator_ = nh.serviceClient<cocktail_bot::UpdateObjectList>(srv_update_obj_name_);
 
         // Wait for the service to be advertised
         ROS_INFO("Waiting for service %s to be advertised...", srv_update_obj_name_.c_str());
-        bool service_found = ros::service::waitForService(srv_update_obj_name_, ros::Duration(30.0)); // You can adjust the timeout as needed
+        bool service_found = ros::service::waitForService(srv_update_obj_name_, ros::Duration(30.0));
 
         if(!service_found)
         {
@@ -54,169 +49,103 @@ public:
             exit;
         }
 
-        ROS_INFO_STREAM("Connected to service: "<<srv_update_obj_name_);
+        ROS_INFO_STREAM("Connected to service: " << srv_update_obj_name_);
 
-        // create a client for the reasoning node service to assert knowledge
-        srv_assert_knowledge_name_ = "assert_knowledge";
-        client_reasoning_ = nh.serviceClient<cocktail_bot::UpdateObjectList>(srv_assert_knowledge_name_);
-
-        // Wait for the service to be advertised
-        ROS_INFO("Waiting for service %s to be advertised...", srv_assert_knowledge_name_.c_str());
-        service_found = ros::service::waitForService(srv_assert_knowledge_name_, ros::Duration(30.0)); // You can adjust the timeout as needed
-
-        if(!service_found)
-        {
-            ROS_ERROR("Failed to call service %s", srv_assert_knowledge_name_.c_str());
-            exit;
-        }
-
-        ROS_INFO_STREAM("Connected to service: "<<srv_assert_knowledge_name_);
-
-        // Create subscriber to receive the commanded turtle state. This state will be generated from a trajectory generator
-        sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &WorldInfo::topic_callback, this);
+        // Create subscriber to receive gazebo model states
+        sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &Percept::sub_gazebo_callback, this);
     };
 
-    ~WorldInfo()
+    ~Percept()
     {
-
     };
 
 private:
 
-  /**
-   * @brief Function to always have the first letter of a string as capital letter
-   *
-   */
-
-    std::string capitalizeFirstLetter(const std::string& s)
+    /**
+     * @brief Callback function to receive the Gazebo Model State topic
+     *
+     * @param msg message with the current Gazebo model state
+     */
+    void sub_gazebo_callback(const gazebo_msgs::ModelStates::ConstPtr& msg)
     {
-        std::string capitalized_s = s;
+        geometry_msgs::Pose tiago_pose;
 
-        // first verify if the string is not empty
-        if(!capitalized_s.empty())
+        // Search for tiago pose
+        auto it = std::find( msg->name.begin(),  msg->name.end(), "tiago");
+
+        // If found, get the pose
+        if (it != msg->name.end())
         {
-            //convert the first character to uppercase
-            capitalized_s[0] = std::toupper(capitalized_s[0]);
+            int index = std::distance(msg->name.begin(), it);
+            tiago_pose=msg->pose.at(index);
+        }
+        else
+        {
+            ROS_ERROR_STREAM("Tiago not found in the scene");
+            return;
         }
 
-        return capitalized_s;
-    }
-
-/**
-   * @brief Callback function to receive the Gazebo Model State topic
-   *
-   * @param msg message with the current Gazebo model state
-   */
-  void topic_callback(const gazebo_msgs::ModelStates::ConstPtr& msg)
-  {
-
-    //Get robot Pose
-    geometry_msgs::Pose tiago_pose;
-    // Search for tiago pose
-   auto it = std::find( msg->name.begin(),  msg->name.end(), "tiago");
-    if (it != msg->name.end()) 
-    {
-        // Calculate the index
-        int index = std::distance(msg->name.begin(), it);
-        tiago_pose=msg->pose.at(index);
-    }
-
-    // search new objects in the scene 
-    for (int i = 0; i < msg->name.size(); i++)
-    {
-        // If current obj is tiago
-        if (msg->name[i]=="tiago") continue;
-        
-        // Get obj position
-        // Get tiago position
-        // Compare distances, if within range then check the v_seen_list
-        // if the obj is not in the list add it and send it to the srv
-
-        // Get object pose
-        geometry_msgs::Pose obj_pose= msg->pose[i];
-
-
-        // get distance from tiago to obj[i]
-        double dx = tiago_pose.position.x - obj_pose.position.x;
-        double dy = tiago_pose.position.y - obj_pose.position.y;
-
-        double d=sqrt(pow(dx, 2)+ pow(dy, 2));
-
-        //IF the robot is closer to the seen objects, then request the service
-        if (d<20)
+        // Search new objects in the scene 
+        for (int i = 0; i < msg->name.size(); i++)
         {
-            std::string s= msg->name[i];
-            // Search for the obj name in the seen_list
-            auto it = std::find(v_seen_obj_.begin(), v_seen_obj_.end(), s);
+            // Get obj name
+            std::string obj_name = msg->name[i];
 
-            // If the obj name is not found in the seen vector, this means that the robot has seen a new object for the first time and it should add it to the seen vector and call the service update_object_list
-            if (it == v_seen_obj_.end()) {
+            // Search for the obj name in the seen list
+            auto it = std::find(v_seen_obj_.begin(), v_seen_obj_.end(), obj_name);
 
+            // If obj already in the seen list, then skip current obj
+            if (it != v_seen_obj_.end()) continue;
+
+            // Get obj pose
+            geometry_msgs::Pose obj_pose= msg->pose[i];
+
+            // Get distance from tiago to obj
+            double dx    = tiago_pose.position.x - obj_pose.position.x;
+            double dy    = tiago_pose.position.y - obj_pose.position.y;
+            double dist  = sqrt(pow(dx, 2)+ pow(dy, 2));
+
+            // If the robot is close enought to the obj, then request the service
+            if (dist < 20)
+            {
                 cocktail_bot::UpdateObjectList srv;
-
-                srv.request.object_name= s;
-                srv.request.object_pose= obj_pose;
+                srv.request.object_name = obj_name;
+                srv.request.object_pose = obj_pose;
 
                 if (client_map_generator_.call(srv))
                 {
-                    ROS_INFO_STREAM("Object List Updated?: "<< (int)srv.response.confirmation);
+                    ROS_INFO_STREAM("Called service [" << srv_update_obj_name_ << "]\
+                                        with object [" << obj_name << "]");
 
                     if(srv.response.confirmation)
                     {
-                        v_seen_obj_.push_back(s);
+                        v_seen_obj_.push_back(obj_name);
 
-                        ROS_INFO_STREAM("Object ["<<s<<"] added to the list");
+                        ROS_INFO_STREAM("Object [" << obj_name << "] added to the seen list");
                     }
                 }
                 else
                 {
-                    ROS_ERROR_STREAM("Failed to call service "<<srv_update_obj_name_);
-                }
-
-                // call the reasoning service
-                cocktail_bot::UpdateObjectList srv_reasoning;
-                //before calling the srv, make sure that the first letter of the "s" is capitalized
-                std::string capitalized_s = capitalizeFirstLetter(s);
-                srv_reasoning.request.object_name= capitalized_s; //I just need to send the ID of the object
-                
-                if(client_reasoning_.call(srv_reasoning))
-                {
-                    ROS_WARN_STREAM ("Creating a new instance of: "<< capitalized_s);
-
-                    ROS_INFO_STREAM ("New instance included in knowledge: "<<(int)srv_reasoning.response.confirmation);
-
-                    if(srv_reasoning.response.confirmation)
-                    {
-                        v_seen_obj_.push_back(s);
-                        ROS_INFO_STREAM("Object ["<<s<<"] added to the list");
-                    }
-                }
-                else
-                {
-                   ROS_ERROR_STREAM("Failed to call service "<<srv_assert_knowledge_name_);   
+                    ROS_ERROR_STREAM("Failed to call service " << srv_update_obj_name_);
                 }
             }
-        } //if d
-    }//for msg size
+    }
 
-    //If you want to print the objects that the robot has seen so far, just uncomment the for 
+    // Debug print for the seen object list
     // for (size_t i = 2; i < v_seen_obj_.size(); i++)
     // {
-    //     ROS_INFO_STREAM("["<<i<<"]: "<<v_seen_obj_.at(i));
+    //     ROS_DEBUG_STREAM("[" << i << "]: " << v_seen_obj_.at(i));
     // }
     
-  } // callback
-
-    
-
-}; // Class 
+  } 
+}; 
 
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "percept_node");
     ros::NodeHandle nh;
 
-    WorldInfo myPercept(nh);
+    Percept myPercept(nh);
 
     ros::spin();
 

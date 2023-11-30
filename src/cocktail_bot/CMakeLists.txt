@@ -172,17 +172,11 @@ add_dependencies(reasoning_node
                         ${catkin_EXPORTED_TARGETS})
 target_link_libraries(reasoning_node  ${catkin_LIBRARIES})
 
-add_executable(knowledge_node src/knowledge_node.cpp)
-add_dependencies(knowledge_node
+add_executable(control_node src/control_node.cpp)
+add_dependencies(control_node 
                         ${${PROJECT_NAME}_EXPORTED_TARGETS}
                         ${catkin_EXPORTED_TARGETS})
-target_link_libraries(knowledge_node  ${catkin_LIBRARIES})
-
-add_executable(tiago_control_node src/tiago_control_node.cpp)
-add_dependencies(tiago_control_node 
-                        ${${PROJECT_NAME}_EXPORTED_TARGETS}
-                        ${catkin_EXPORTED_TARGETS})
-target_link_libraries(tiago_control_node  ${catkin_LIBRARIES})
+target_link_libraries(control_node  ${catkin_LIBRARIES})
 
 
 ## Rename C++ executable without prefix
