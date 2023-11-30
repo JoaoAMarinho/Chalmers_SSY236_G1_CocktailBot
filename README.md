@@ -44,9 +44,9 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-The objective of this project is to `todo`.
+The objective of this project is to build an autonomous robot capable of crafting a diverse range of cocktails.
 
-With this application, users can `todo`. However, it is important to note that the scope of this project does not include ... only `todo`. 
+With this application, users can request for the desired cocktail and the robot will be responsible for finding the necessary ingredients and moving back to the bar counter. However, it is important to note that the scope of this project does not include grasping the ingredients only moving towards their position. 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
