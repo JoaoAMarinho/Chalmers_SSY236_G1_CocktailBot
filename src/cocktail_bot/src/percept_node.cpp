@@ -8,7 +8,6 @@
 
 #include <gazebo_msgs/ModelStates.h>
 #include <cocktail_bot/UpdateObjectList.h>
-#include <cocktail_bot/SetInitTiagoPose.h>
 
 
 class Percept
@@ -51,7 +50,7 @@ public:
 
         ROS_INFO_STREAM("Connected to service: " << srv_update_obj_name_);
 
-        // Create subscriber to receive gazebo model states
+        // Create subscriber to receive gazebo model_states
         sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &Percept::sub_gazebo_callback, this);
     };
 
@@ -62,9 +61,9 @@ public:
 private:
 
     /**
-     * @brief Callback function to receive the Gazebo Model State topic
+     * @brief Callback function to receive the gazebo model_states topic
      *
-     * @param msg message with the current Gazebo model state
+     * @param msg message with the current gazebo model_states
      */
     void sub_gazebo_callback(const gazebo_msgs::ModelStates::ConstPtr& msg)
     {
@@ -129,15 +128,14 @@ private:
                     ROS_ERROR_STREAM("Failed to call service " << srv_update_obj_name_);
                 }
             }
-    }
+        }
 
     // Debug print for the seen object list
     // for (size_t i = 2; i < v_seen_obj_.size(); i++)
     // {
-    //     ROS_DEBUG_STREAM("[" << i << "]: " << v_seen_obj_.at(i));
-    // }
-    
-  } 
+    //     ROS_INFO_STREAM("[" << i << "]: " << v_seen_obj_.at(i));
+    // } 
+    }
 }; 
 
 int main(int argc, char** argv)

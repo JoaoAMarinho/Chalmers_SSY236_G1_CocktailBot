@@ -65,7 +65,6 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   UpdateObjectList.srv
-  SetInitTiagoPose.srv
   GetSceneObjectList.srv
   LoadKnowledge.srv
   GoToObject.srv
