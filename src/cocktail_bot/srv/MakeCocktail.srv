@@ -1,0 +1,6 @@
+# Name of the cocktail recipe
+string cocktail_name
+
+---
+# Confirmation of request
+bool confirmation

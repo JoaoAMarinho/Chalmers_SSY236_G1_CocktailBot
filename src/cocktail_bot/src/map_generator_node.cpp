@@ -15,7 +15,6 @@ class MapGenerator
 {
 private:
 
-
     std::string srv_update_obj_name_;        // Name of the service to update the object list
     ros::ServiceServer update_obj_list_srv_; // Service to update object list
 

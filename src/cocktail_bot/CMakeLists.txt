@@ -68,6 +68,7 @@ add_service_files(
   GetSceneObjectList.srv
   LoadKnowledge.srv
   GoToObject.srv
+  MakeCocktail.srv
 )
 
 ## Generate actions in the 'action' folder

@@ -6,175 +6,131 @@
 
 #include <rosprolog/rosprolog_client/PrologClient.h>
 
-#include <cocktail_bot/UpdateObjectList.h>
+#include <cocktail_bot/MakeCocktail.h>
+#include <cocktail_bot/GoToObject.h>
 
-using namespace std;
 
 class Reasoner
 {
 private:
-    PrologClient pl_;
-    int ID_;
+    PrologClient pl_; // Prolog client to connect to the Prolog server
 
-    std::string srv_assert_knowledge_name_;
-    ros::ServiceServer assert_knowledge_srv_;                            // Advertise service to assert knowledge in the ontology
+    std::string srv_go_to_obj_name_;       // Name of the service provided by the control node
+    ros::ServiceClient client_go_to_obj_;  // Client to request moving the robot to an object
 
-    //Variable to save our preference to save or not the asserted queries
-    bool m_query_flag_save;
-    std::ofstream output_file; //The file may have to stay open.
+    std::string srv_make_cocktail_name_;   // Name of the service to receive cocktail requests
+    ros::ServiceServer make_cocktail_srv_; // Service to receive cocktail requests
+
 public:
 
     Reasoner(ros::NodeHandle &nh)
     {
+        ROS_WARN_STREAM("Created Reasoning Node");
+        
+        // Wait for the Prolog service to be advertised
         ROS_INFO_STREAM("Wait for the Prolog service...");
-
         if(pl_.waitForServer())
             pl_ = PrologClient("/rosprolog", true);
 
-        ID_=0; //Global variable to include in the asserted instances
+        // Create client and wait until service is advertised
+        srv_go_to_obj_name_="go_to_object";
+        client_go_to_obj_ = nh.serviceClient<cocktail_bot::GoToObject>(srv_go_to_obj_name_);
 
-        srv_assert_knowledge_name_ = "assert_knowledge";
-        assert_knowledge_srv_ = nh.advertiseService(srv_assert_knowledge_name_, &Reasoner::srv_assert_callback, this);
+        // Wait for the service to be advertised
+        ROS_INFO("Waiting for service %s to be advertised...", srv_go_to_obj_name_.c_str());
+        bool service_found = ros::service::waitForService(srv_go_to_obj_name_, ros::Duration(30.0));
 
-        this->m_query_flag_save=false;
+        if(!service_found)
+        {
+            ROS_ERROR("Failed to call service %s", srv_go_to_obj_name_.c_str());
+            exit;
+        }
+
+        ROS_INFO_STREAM("Connected to service: " << srv_go_to_obj_name_);
+
+        // Create service to receive cocktail requests
+        srv_make_cocktail_name_ = "make_cocktail";
+        make_cocktail_srv_ = nh.advertiseService(srv_make_cocktail_name_, &Reasoner::srv_make_cocktail_callback, this);
     };
 
-    ~Reasoner(){
-        output_file.close();
+    ~Reasoner()
+    {
     };
 
-    void setOutQueriesFile(string QueryfileName)
-    {
-        output_file.open(QueryfileName, std::ios::app);
+private:
 
-        if (output_file.is_open()) {
-            ROS_INFO_STREAM("File is open " << QueryfileName);
-            this->m_query_flag_save=true; //This means that I want to save the queries in a file
-        } else {
-            ROS_WARN_STREAM("Failed to open file " << QueryfileName);
-            this->m_query_flag_save=false;
-        }
-    }
-
-private:    
-
-    void save_query(string query)
-    {
-        if (!m_query_flag_save)
-            return;
-
-        if (output_file.is_open()) {
-            output_file << query << endl;
-        } else {
-            ROS_WARN_STREAM("File not open");
-        }
-    }
-
-     /**
-     * @brief Callback function for the service that adds objects to the map_objects list
+    /**
+     * @brief Callback function for the service that receives cocktail requests
      *
-     * @param Request requested object to be added to the knowledge base
-     * @param Respose response from the service when the object has been asserted (true/false)
+     * @param Request requested cocktail recipe
+     * @param Respose response from the service
      */
-    bool srv_assert_callback(cocktail_bot::UpdateObjectList::Request &req,
-                             cocktail_bot::UpdateObjectList::Response &res)
+    bool srv_make_cocktail_callback(cocktail_bot::MakeCocktail::Request  &req,
+                                    cocktail_bot::MakeCocktail::Response &res)
     {
-        ROS_INFO_STREAM("Got new object: " << req.object_name);
-        std::string object;
-        
-        object=req.object_name;
+        ROS_INFO_STREAM("Requested cocktail: " << req.cocktail_name);
 
-        getClass(object);
-
-        res.confirmation = assertKnowledge(object);
+        res.confirmation = true;
         return res.confirmation;
     }
 
-
-    void getClass(std::string className)
-    {
+    // Example of how to assert queries to prolog
+    // void getClass(std::string className)
+    // {
         
-        std::stringstream ss;
-        ss << "get_class('" << className << "')";
+    //     std::stringstream ss;
+    //     ss << "get_class('" << className << "')";
 
-        std:string query= ss.str();
+    //     std:string query= ss.str();
 
-        ROS_INFO_STREAM("query: "<<query);
-        save_query(query);
+    //     ROS_INFO_STREAM("query: "<<query);
 
-        PrologQuery bdgs = pl_.query(query);
+    //     PrologQuery bdgs = pl_.query(query);
 
-        bool res = false;
-        for (auto &it : bdgs) 
-        {
-            res = true;
-            ROS_INFO_STREAM("A new class was created in the ontology");
-            break;
-        }
+    //     bool res = false;
+    //     for (auto &it : bdgs) 
+    //     {
+    //         res = true;
+    //         ROS_INFO_STREAM("A new class was created in the ontology");
+    //         break;
+    //     }
+    // }
+    // TODO: remove both functions
+    // bool assertKnowledge(std::string className)
+    // {
+    //     std::string instanceName;
 
-       
-    }
-
-    bool assertKnowledge(std::string className)
-    {
-        std::string instanceName;
-
-        std::stringstream ss;
-        ss << "create_instance_from_class('" << className << "', " << ID_ << ", Instance)";
+    //     std::stringstream ss;
+    //     ss << "create_instance_from_class('" << className << "', " << ID_ << ", Instance)";
         
-        std:string query= ss.str();
+    //     std:string query= ss.str();
 
-        ROS_INFO_STREAM("query: "<<query);
-        save_query(query);
+    //     ROS_INFO_STREAM("query: "<<query);
 
-        PrologQuery bdgs = pl_.query(query);
+    //     PrologQuery bdgs = pl_.query(query);
 
-        for(PrologQuery::iterator it=bdgs.begin(); it != bdgs.end(); it++)
-        {
-            PrologBindings val = *it;
-            std::stringstream instanceVal;
-            instanceVal << val["Instance"];
+    //     for(PrologQuery::iterator it=bdgs.begin(); it != bdgs.end(); it++)
+    //     {
+    //         PrologBindings val = *it;
+    //         std::stringstream instanceVal;
+    //         instanceVal << val["Instance"];
             
-            instanceName = instanceVal.str();
-            ROS_WARN_STREAM("new instance in knowledge base: " << instanceName);
-        }
+    //         instanceName = instanceVal.str();
+    //         ROS_WARN_STREAM("new instance in knowledge base: " << instanceName);
+    //     }
 
-        bdgs.finish();
-        ID_++;
+    //     bdgs.finish();
+    //     ID_++;
         
-        return true;
-    }
-
-}; //class Reasoner
+    //     return true;
+    // }
+};
 
 int main(int argc, char *argv[]) {
     ros::init(argc, argv, "reasoning_node");
-
     ros::NodeHandle nh;
 
     Reasoner myReasoner(nh);
-
-    std::string saveFilePath = argv[1]; // Information about the path for the file that will save the queries
-    
-    std::string saveQueryFile; // Variable about where to save the queries
-    bool saveQueries_flag;     // Variable about whether or not to save the queries
-
-    if (!nh.getParam("/read_prolog_queries/saved_query_file", saveQueryFile)) {
-        ROS_WARN_STREAM("No query file path specified!");
-    }
-
-    if (!nh.getParam("/read_prolog_queries/save_flag", saveQueries_flag)) {
-        ROS_WARN_STREAM("No save flag specified!");
-    }  
-
-    if(saveQueries_flag && !saveQueryFile.empty())
-    {   //If the flag is true, then I will configure the file to save the asserted queries
-        saveQueryFile = saveFilePath + saveQueryFile;
-        ROS_INFO_STREAM("Query file: "<< saveQueryFile);
-
-        //Now we call a new function which will create and open the new file
-        myReasoner.setOutQueriesFile(saveQueryFile);    
-    }
 
     ros::spin();
 
