@@ -4,6 +4,7 @@
 
 
 :- consult('instance_utils').
+:- consult('cocktail_knowledge').
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
