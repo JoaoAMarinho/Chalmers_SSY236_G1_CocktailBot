@@ -7,45 +7,40 @@
 #include <cocktail_bot/GetSceneObjectList.h>
 #include <cocktail_bot/GoToObject.h>
 
+
 class Controller
 {
 private:
 
-    std::string subs_topic_name_;        ///< gazebo model state topic name
-    std::string srv_get_scene_name_;     ///< name of the service provided by the map generator node
-    std::string srv_go_to_obj_name_;     ///< name of the service provided by the map generator node
+    std::string subs_topic_name_;      // Gazebo model_states topic name
+    ros::Subscriber sub_gazebo_data_;  // Subscriber gazebo model_states
+
+    ros::Publisher pub_controls_;      // Publisher gazebo key_vel
+    ros::Timer controls_timer_;        // Timer to publish control actions
     
-    std::vector<std::string> v_seen_obj_;     ///< List of objects seen by the robot and sent to the map generator node
-    ros::ServiceClient client_map_generator_; ///< Client to request the object list update in the map generator node
-    ros::ServiceServer go_to_obj_srv_;        ///< Advertise service to calculate the path to an object
-
-    ros::Subscriber sub_gazebo_data_;    ///< Subscriber gazebo model_states
-    ros::Publisher  pub_gazebo_data_;    ///< Publisher gazebo model_states
-    ros::Timer tf_timer_;                ///< Timer to run a parallel process
-
-    geometry_msgs::Pose tiago_pose;       ///< Pose of the robot
-    geometry_msgs::Pose obj_pose;         ///< Pose of the target
-    bool requested_obj;                   ///< Requested obj flag
+    std::string srv_go_to_obj_name_;   // Name of the service to move the robot to an object
+    ros::ServiceServer go_to_obj_srv_; // Service to move the robot to an object
+    
+    std::string srv_get_scene_name_;          // Name of the service provided by the map generator node
+    ros::ServiceClient client_map_generator_; // Client to request information about objects in the scene
+    
+    geometry_msgs::Pose tiago_pose;       // Pose of the robot
+    geometry_msgs::Pose obj_pose;         // Pose of the target
+    bool requested_obj;                   // Requested obj flag
 
 public:
 
     Controller(ros::NodeHandle& nh)
     {
-        subs_topic_name_="/gazebo/model_states";
-
-        srv_get_scene_name_ = "get_scene_object_list";
-        srv_go_to_obj_name_ = "go_to_object";
-
-        // This objects will not be sent to the Map generator node
-        v_seen_obj_.push_back("tiago");
-        v_seen_obj_.push_back("ground_plane");
+        ROS_WARN_STREAM("Created Controller Node");
 
         // Create client and wait until service is advertised
+        srv_get_scene_name_ = "get_scene_object_list";
         client_map_generator_ = nh.serviceClient<cocktail_bot::GetSceneObjectList>(srv_get_scene_name_);
 
         // Wait for the service to be advertised
         ROS_INFO("Waiting for service %s to be advertised...", srv_get_scene_name_.c_str());
-        bool service_found = ros::service::waitForService(srv_get_scene_name_, ros::Duration(30.0)); // You can adjust the timeout as needed
+        bool service_found = ros::service::waitForService(srv_get_scene_name_, ros::Duration(30.0));
 
         if(!service_found)
         {
@@ -55,14 +50,17 @@ public:
 
         ROS_INFO_STREAM("Connected to service: " << srv_get_scene_name_);
 
-        // Advertising the new service
+        // Create service to move the robot to an object
+        srv_go_to_obj_name_ = "go_to_object";
         go_to_obj_srv_ = nh.advertiseService(srv_go_to_obj_name_, &Controller::srv_go_to_obj_callback, this);
 
-        // Create subscriber to gazebo
-        sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &Controller::topic_callback, this);
-        pub_gazebo_data_ = nh.advertise<geometry_msgs::Twist>("/key_vel", 100);
-
-        tf_timer_ = nh.createTimer(ros::Duration(0.5), &Controller::publishControls, this);
+        // Create subscriber to receive gazebo model_states
+        subs_topic_name_="/gazebo/model_states";
+        sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &Controller::sub_gazebo_callback, this);
+        
+        // Create publisher to send control actions to gazebo
+        pub_controls_ = nh.advertise<geometry_msgs::Twist>("/key_vel", 100);
+        controls_timer_ = nh.createTimer(ros::Duration(0.5), &Controller::controls_timer_callback, this);
     };
 
     ~Controller()
@@ -108,6 +106,12 @@ private:
         return res.confirmation;
     }
 
+    /**
+     * @brief Function to convert a quaternion to a 2D rotation matrix
+     *
+     * @param quaternion quaternion to be converted
+     * @return Eigen::Matrix2d 2D rotation matrix
+     */
     Eigen::Matrix2d q2Rot2D(const geometry_msgs::Quaternion &quaternion)
     {
         Eigen::Quaterniond eigenQuaternion(quaternion.w, quaternion.x, quaternion.y, quaternion.z);
@@ -118,9 +122,9 @@ private:
     /**
      * @brief Callback function to publish the controls to gazebo
      *
-     * @param e Timer event
+     * @param e timer event
      */
-    void publishControls(const ros::TimerEvent& e)
+    void controls_timer_callback(const ros::TimerEvent& e)
     {
         if (!requested_obj) return;
 
@@ -131,7 +135,7 @@ private:
 
         Eigen::Vector2d Dpose_w = target_w - tiago_w;
 
-        //Get 2D Rotation matrix from quaternion
+        // Get 2D Rotation matrix from quaternion
         Eigen::Matrix2d Rtiago_w = q2Rot2D(tiago_pose.orientation);
         Eigen::Matrix2d Rw_tiago = Rtiago_w.inverse();
         
@@ -146,7 +150,7 @@ private:
         tiago_twist_cmd.angular.z = Kwz*theta;
 
         ROS_INFO_STREAM("Published msg: "<<tiago_twist_cmd);
-        pub_gazebo_data_.publish(tiago_twist_cmd);
+        pub_controls_.publish(tiago_twist_cmd);
 
         if (tiago_twist_cmd.linear.x == 0. && abs(tiago_twist_cmd.angular.z) < 0.002) {
             ROS_INFO_STREAM("Reached object");
@@ -155,11 +159,11 @@ private:
     }
 
     /**
-     * @brief Callback function to receive the Gazebo Model State topic
+     * @brief Callback function to receive the gazebo model_states topic
      *
-     * @param msg message with the current Gazebo model state
+     * @param msg message with the current gazebo model_states
      */
-    void topic_callback(const gazebo_msgs::ModelStates::ConstPtr& msg)
+    void sub_gazebo_callback(const gazebo_msgs::ModelStates::ConstPtr& msg)
     {
         // Search for tiago pose
         auto it = std::find( msg->name.begin(),  msg->name.end(), "tiago");
@@ -169,18 +173,20 @@ private:
             int index = std::distance(msg->name.begin(), it);
             tiago_pose=msg->pose.at(index);
         }
-    } // callback
-}; // Class 
+        else
+        {
+            ROS_ERROR_STREAM("Tiago not found in the scene");
+        }
+    }
+}; 
 
 int main(int argc, char** argv)
 {
-    // Initialize the ROS node
-    ros::init(argc, argv, "tiago_control_node");
+    ros::init(argc, argv, "control_node");
     ros::NodeHandle nh;
 
-    Controller controllerNode(nh);
+    Controller myController(nh);
 
-    // Run the node
     ros::spin();
 
     return 0;
