@@ -36,5 +36,5 @@ cocktail_recipe(margarita,   [tequila, lime, salt, ice]).
 cocktail_recipe(mojito,      [rum, mint_leaves, lime, sugar, soda, ice]).
 cocktail_recipe(pina_colada, [rum, coconut, pineapple, ice]).
 
-cocktail_recipe(strawberry_banana, [strawberry, banana, milk, ice])
-cocktail_recipe(apple_strawberry,  [apple, strawberry, ice])
+cocktail_recipe(strawberry_banana, [strawberry, banana, milk, ice]).
+cocktail_recipe(apple_strawberry,  [apple, strawberry, ice]).

@@ -9,10 +9,12 @@
   <!-- Launch Map Generator -->
   <node pkg="cocktail_bot" type="map_generator_node" name="map_generator_node" output="screen" />
 
+  <!-- Launch Controller -->
+  <node pkg="cocktail_bot" type="control_node" name="control_node" output="screen" />
+
+  <!-- Launch Reasoner -->
+  <node pkg="cocktail_bot" type="reasoning_node" name="reasoning_node" output="screen" />
+
   <!-- Launch Percept -->
   <node pkg="cocktail_bot" type="percept_node" name="percept_node" output="screen" />
-
-  <!-- Launch Controller -->
-  <node pkg="cocktail_bot" type="tiago_control_node" name="tiago_control_node" output="screen" />
-
 </launch>

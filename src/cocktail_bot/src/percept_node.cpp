@@ -7,6 +7,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <gazebo_msgs/ModelStates.h>
+#include <cocktail_bot/UpdateKnowledge.h>
 #include <cocktail_bot/UpdateObjectList.h>
 
 
@@ -19,6 +20,9 @@ private:
 
     std::string srv_update_obj_name_;         // Name of the service provided by the map generator node
     ros::ServiceClient client_map_generator_; // Client to request updates to the seen objects in the map generator node
+
+    std::string srv_update_knowledge_name_;   // Name of the service provided by the reasoning node
+    ros::ServiceClient client_reasoning_;     // Client to request updates to the seen objects in the reasoning node
     
     std::vector<std::string> v_seen_obj_;     // List of objects seen by the robot and sent to the map generator node
 
@@ -50,6 +54,22 @@ public:
 
         ROS_INFO_STREAM("Connected to service: " << srv_update_obj_name_);
 
+        // Create client and wait until service is advertised
+        srv_update_knowledge_name_="update_knowledge";
+        client_reasoning_ = nh.serviceClient<cocktail_bot::UpdateObjectList>(srv_update_knowledge_name_);
+
+        // Wait for the service to be advertised
+        ROS_INFO("Waiting for service %s to be advertised...", srv_update_knowledge_name_.c_str());
+        service_found = ros::service::waitForService(srv_update_knowledge_name_, ros::Duration(30.0));
+
+        if(!service_found)
+        {
+            ROS_ERROR("Failed to call service %s", srv_update_knowledge_name_.c_str());
+            exit;
+        }
+
+        ROS_INFO_STREAM("Connected to service: " << srv_update_knowledge_name_);
+
         // Create subscriber to receive gazebo model_states
         sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &Percept::sub_gazebo_callback, this);
     };
@@ -70,7 +90,7 @@ private:
         geometry_msgs::Pose tiago_pose;
 
         // Search for tiago pose
-        auto it = std::find( msg->name.begin(),  msg->name.end(), "tiago");
+        auto it = std::find(msg->name.begin(),  msg->name.end(), "tiago");
 
         // If found, get the pose
         if (it != msg->name.end())
@@ -107,20 +127,44 @@ private:
             // If the robot is close enought to the obj, then request the service
             if (dist < 20)
             {
-                cocktail_bot::UpdateObjectList srv;
-                srv.request.object_name = obj_name;
-                srv.request.object_pose = obj_pose;
+                // TODO: receive the class name from the classifier
 
-                if (client_map_generator_.call(srv))
+                cocktail_bot::UpdateKnowledge srv_reasoning;
+                srv_reasoning.request.class_name = obj_name;
+
+                if (client_map_generator_.call(srv_reasoning))
                 {
-                    ROS_INFO_STREAM("Called service [" << srv_update_obj_name_ << "]\
+                    ROS_INFO_STREAM("Called service [" << srv_update_knowledge_name_ << "]\
                                         with object [" << obj_name << "]");
 
-                    if(srv.response.confirmation)
+                    if(!srv_reasoning.response.confirmation)
                     {
-                        v_seen_obj_.push_back(obj_name);
+                        ROS_ERROR_STREAM("Failed to confirm call to service " << srv_update_obj_name_);
+                        return;
+                    }
+                }
+                else
+                {
+                    ROS_ERROR_STREAM("Failed to call service " << srv_update_obj_name_);
+                    return;
+                }
 
-                        ROS_INFO_STREAM("Object [" << obj_name << "] added to the seen list");
+                cocktail_bot::UpdateObjectList srv_map_generator;
+                std::string instance_name = srv_reasoning.response.instance_name;
+
+                srv_map_generator.request.object_name = instance_name;
+                srv_map_generator.request.object_pose = obj_pose;
+
+                if (client_map_generator_.call(srv_map_generator))
+                {
+                    ROS_INFO_STREAM("Called service [" << srv_update_obj_name_ << "]\
+                                        with object [" << instance_name << "]");
+
+                    if(srv_map_generator.response.confirmation)
+                    {
+                        v_seen_obj_.push_back(instance_name);
+
+                        ROS_INFO_STREAM("Object [" << instance_name << "] added to the seen list");
                     }
                 }
                 else

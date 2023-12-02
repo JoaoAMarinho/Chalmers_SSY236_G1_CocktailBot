@@ -2,5 +2,5 @@
 string object_name
 
 ---
-# true if the target object was in the list and was reached
+# True if the target object was in the list and was reached
 bool confirmation
