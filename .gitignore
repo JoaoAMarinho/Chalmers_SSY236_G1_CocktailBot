@@ -235,6 +235,7 @@ devel_isolated/
 
 # qcreator stuff
 CMakeLists.txt.user
+/src/CMakeLists.txt
 
 srv/_*.py
 *.pcd
