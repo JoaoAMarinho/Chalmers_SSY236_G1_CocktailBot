@@ -77,14 +77,14 @@ For more details, please refer to the project's [Usage Guide](./docs/usage_guide
 
 ### Building and Running
 
-1. Clone the project repository:
+1. Build the project:
 ```bash
-  git clone https://github.com/LGP-FEUP-2023/SC14.git
+  ./src/cocktail_bot/scripts/build.sh
 ```
 
-2. Navigate to the `/src` directory:
+2. Run nodes TODO:
 ```bash
-  cd src
+
 ```
 
 
