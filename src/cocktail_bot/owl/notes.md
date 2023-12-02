@@ -78,3 +78,8 @@ range: Cold
 condimentsStorage
 domain: FoodShelf
 range: Condiment
+
+### StorageGlasses
+glassStorage
+domain: FoodShelf
+range: DrinkingVessel

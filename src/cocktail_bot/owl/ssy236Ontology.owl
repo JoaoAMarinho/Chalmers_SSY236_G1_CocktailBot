@@ -153,6 +153,16 @@
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#glassStorage -->
+
+    <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#glassStorage">
+        <rdfs:subPropertyOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#abstractProperties"/>
+        <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#FoodShelf"/>
+        <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#DrinkingVessel"/>
+    </owl:ObjectProperty>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#hasCriteria -->
 
     <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#hasCriteria">
