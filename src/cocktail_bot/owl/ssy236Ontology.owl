@@ -6,28 +6,7 @@
      xmlns:xml="http://www.w3.org/XML/1998/namespace"
      xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
      xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
-    <owl:Ontology rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl">
-        <rdfs:comment>Copyright © 2007-2011 by
-          Chalmers University of Technology. This work is licensed under
-          CreativeCommons Attribution 3.0, so you are granted to use, copy,
-          distribute, transmit and adapt this work, but you must attribute
-          the work to the original authors.
-
-          Parts of this ontology are based on the OpenCyc ontology. The OpenCyc
-          OWL Ontologies are Copyright © 2001-2009 Cycorp, Inc., Austin, TX,
-          USA. All rights reserved.
-
-          These files contain an OWL representation of information contained
-          in the OpenCyc Knowledge Base. The content of these OWL files are
-          licensed under the Creative Commons Attribution 3.0 license. The
-          content of these OWL files, including the OpenCyc content they
-          represent, constitutes the &quot;Work&quot; referred to in the
-          Creative Commons license. The terms of this license equally apply
-          to, without limitation, renamings and other logically equivalent
-          reformulations of the content of these OWL files (or portions
-          thereof) in any natural or formal language, as well as to derivations
-          of this content or inclusion of it in other ontologies.</rdfs:comment>
-    </owl:Ontology>
+    <owl:Ontology rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl"/>
     
 
 
@@ -76,6 +55,46 @@
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#cocktailContainer -->
+
+    <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#cocktailContainer">
+        <rdfs:subPropertyOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#recipeProperties"/>
+        <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cocktail"/>
+        <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#DrinkingVessel"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#cocktailIngredient -->
+
+    <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#cocktailIngredient">
+        <rdfs:subPropertyOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#recipeProperties"/>
+        <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cocktail"/>
+        <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#FoodOrDrinkOrIngredient"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#coldStorage -->
+
+    <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#coldStorage">
+        <rdfs:subPropertyOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#abstractProperties"/>
+        <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Fridge"/>
+        <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cold"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#condimentsStorage -->
+
+    <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#condimentsStorage">
+        <rdfs:subPropertyOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#abstractProperties"/>
+        <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#FoodShelf"/>
+        <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Condiment"/>
+    </owl:ObjectProperty>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#describedInMap -->
 
     <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#describedInMap">
@@ -114,12 +133,32 @@
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#freshStorage -->
+
+    <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#freshStorage">
+        <rdfs:subPropertyOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#abstractProperties"/>
+        <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Table"/>
+        <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Food"/>
+    </owl:ObjectProperty>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#fromLocation -->
 
     <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#fromLocation">
         <rdfs:subPropertyOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#spatialProperties"/>
         <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#MovementEvent"/>
         <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#MovementRotation"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#glassStorage -->
+
+    <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#glassStorage">
+        <rdfs:subPropertyOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#abstractProperties"/>
+        <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#FoodShelf"/>
+        <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#DrinkingVessel"/>
     </owl:ObjectProperty>
     
 
@@ -305,6 +344,35 @@
         <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#TransitiveProperty"/>
         <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Event"/>
         <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#PurposefulAction"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#recipeProperties -->
+
+    <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#recipeProperties">
+        <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Recipe"/>
+        <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#SpatialThing"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#smoothieContainer -->
+
+    <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#smoothieContainer">
+        <rdfs:subPropertyOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#recipeProperties"/>
+        <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Smoothie"/>
+        <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#DrinkingVessel"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#smoothieIngredient -->
+
+    <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#smoothieIngredient">
+        <rdfs:subPropertyOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#recipeProperties"/>
+        <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Smoothie"/>
+        <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#FoodOrDrinkOrIngredient"/>
     </owl:ObjectProperty>
     
 
@@ -1185,6 +1253,14 @@
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#AppleStrawberry -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#AppleStrawberry">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Smoothie"/>
+    </owl:Class>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Artifact -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Artifact">
@@ -1505,10 +1581,26 @@
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cocktail -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cocktail">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Recipe"/>
+    </owl:Class>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#CocoaPowder -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#CocoaPowder">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Powder"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Coconut -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Coconut">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#EdibleFruit"/>
     </owl:Class>
     
 
@@ -1525,6 +1617,14 @@
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Coke">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Drink"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cold -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cold">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#FoodIngredientOnly"/>
     </owl:Class>
     
 
@@ -1985,6 +2085,15 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#FoodShelf -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#FoodShelf">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Furniture"/>
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Holder"/>
+    </owl:Class>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#FoodStorageContainer -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#FoodStorageContainer">
@@ -2024,6 +2133,15 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Freezer">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#RefrigeratedStorageDevice"/>
         <owl:disjointWith rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Refrigerator"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Fridge -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Fridge">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#FoodStorageContainer"/>
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Furniture"/>
     </owl:Class>
     
 
@@ -2150,6 +2268,22 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Herb -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Herb">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Food"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Holder -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Holder">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#ContainerArtifact"/>
+    </owl:Class>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#HomeAppliance -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#HomeAppliance">
@@ -2179,6 +2313,14 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#HumanActivity">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#IntelligentAgentActivity"/>
         <rdfs:comment>Each instance of HumanActivity is a spatially-localized action each of whose &quot;doers&quot; (see doneBy) is either a HomoSapiens or a group of humans.</rdfs:comment>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Ice -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Ice">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cold"/>
     </owl:Class>
     
 
@@ -2398,6 +2540,14 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Margarita -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Margarita">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cocktail"/>
+    </owl:Class>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Mayonnaise -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Mayonnaise">
@@ -2473,11 +2623,27 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Mint -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Mint">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Herb"/>
+    </owl:Class>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#MixForBakedGoods -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#MixForBakedGoods">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#FoodIngredientOnly"/>
         <rdfs:comment>This is the collection of commercially produced mixes for baked goods. This includes cake mixes, mixes for pancakes, biscuits, muffins etc. Cake mixes are the most prominent type of mix for baked goods.</rdfs:comment>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Mojito -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Mojito">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cocktail"/>
     </owl:Class>
     
 
@@ -2695,6 +2861,14 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#PinaColada -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#PinaColada">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cocktail"/>
+    </owl:Class>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Pineapple -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Pineapple">
@@ -2830,6 +3004,14 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Recipe -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Recipe">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#TemporalThing"/>
+    </owl:Class>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#RefrigeratedStorageDevice -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#RefrigeratedStorageDevice">
@@ -2894,6 +3076,14 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#RoundObject">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#ThingTypeShape"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Rum -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Rum">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#AlcoholicBeverage"/>
     </owl:Class>
     
 
@@ -2977,6 +3167,22 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Skill">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#PhysicalEvent"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Smoothie -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Smoothie">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Recipe"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Soda -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Soda">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Drink"/>
     </owl:Class>
     
 
@@ -3065,6 +3271,30 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Strawberry -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Strawberry">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#EdibleFruit"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#StrawberryBanana -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#StrawberryBanana">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Smoothie"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Sugar -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Sugar">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Condiment"/>
+    </owl:Class>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#SupportingStructure -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#SupportingStructure">
@@ -3085,6 +3315,7 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Table">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Furniture"/>
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Holder"/>
     </owl:Class>
     
 
@@ -3135,6 +3366,14 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#TemporalThing">
         <rdfs:comment>A specialization of Individual. This is the collection of all things that have temporal extent or location -- things about which one might sensibly ask &quot;When?&quot;. TemporalThing thus contains many kinds of things, including events, physical objects, agreements, and pure intervals of time. Major specializations of this collection are SomethingExisting, Situation, and TimeInterval (qq.v.).
 Things that are timeless -- such as mathematical sets, Collections, and numbers -- are of course not instances of TemporalThing</rdfs:comment>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Tequila -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Tequila">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#AlcoholicBeverage"/>
     </owl:Class>
     
 
