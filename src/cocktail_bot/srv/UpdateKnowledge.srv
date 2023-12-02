@@ -1,0 +1,8 @@
+# Class name of the seen object 
+string class_name
+
+---
+# True if the knowledge base has been updated
+bool confirmation
+# Name of the instance in the knowledge base
+string instance_name

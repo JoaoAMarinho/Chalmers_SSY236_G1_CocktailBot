@@ -64,8 +64,8 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   UpdateObjectList.srv
+  UpdateKnowledge.srv
   GetSceneObjectList.srv
-  LoadKnowledge.srv
   GoToObject.srv
   MakeCocktail.srv
   ClassifyObject.srv

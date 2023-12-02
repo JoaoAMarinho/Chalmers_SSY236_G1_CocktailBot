@@ -6,8 +6,9 @@
 
 #include <rosprolog/rosprolog_client/PrologClient.h>
 
-#include <cocktail_bot/MakeCocktail.h>
 #include <cocktail_bot/GoToObject.h>
+#include <cocktail_bot/MakeCocktail.h>
+#include <cocktail_bot/UpdateKnowledge.h>
 
 
 class Reasoner
@@ -15,11 +16,16 @@ class Reasoner
 private:
     PrologClient pl_; // Prolog client to connect to the Prolog server
 
-    std::string srv_go_to_obj_name_;       // Name of the service provided by the control node
-    ros::ServiceClient client_go_to_obj_;  // Client to request moving the robot to an object
+    std::string srv_go_to_obj_name_;          // Name of the service provided by the control node
+    ros::ServiceClient client_go_to_obj_;     // Client to request moving the robot to an object
 
-    std::string srv_make_cocktail_name_;   // Name of the service to receive cocktail requests
-    ros::ServiceServer make_cocktail_srv_; // Service to receive cocktail requests
+    std::string srv_make_cocktail_name_;      // Name of the service to receive cocktail requests
+    ros::ServiceServer make_cocktail_srv_;    // Service to receive cocktail requests
+
+    std::string srv_update_knowledge_name_;   // Name of the service to update the knowledge base
+    ros::ServiceServer update_knowledge_srv_; // Service to update the knowledge base
+
+    int ID_ = 0; // ID for the created instances
 
 public:
 
@@ -51,6 +57,10 @@ public:
         // Create service to receive cocktail requests
         srv_make_cocktail_name_ = "make_cocktail";
         make_cocktail_srv_ = nh.advertiseService(srv_make_cocktail_name_, &Reasoner::srv_make_cocktail_callback, this);
+
+        // Create service to update the knowledge base
+        srv_update_knowledge_name_ = "update_knowledge";
+        update_knowledge_srv_ = nh.advertiseService(srv_update_knowledge_name_, &Reasoner::srv_update_knowledge_callback, this);
     };
 
     ~Reasoner()
@@ -74,27 +84,47 @@ private:
         return res.confirmation;
     }
 
+    /**
+     * @brief Callback function for the service that updates the knowledge base
+     *
+     * @param Request requested update class
+     * @param Respose response from the service
+     */
+    bool srv_update_knowledge_callback(cocktail_bot::UpdateKnowledge::Request  &req,
+                                       cocktail_bot::UpdateKnowledge::Response &res)
+    {
+        ROS_INFO_STREAM("Got new object of class: " << req.class_name);
+
+        std::string instance_name = req.class_name + "_" + std::to_string(ID_);
+
+        std::stringstream ss;
+        ss << "create_instance_from_class('" << req.class_name << "', " << ID_ << ", Instance)";
+
+        std::string query = ss.str();
+        ROS_INFO_STREAM("Query: " << query);
+
+        PrologQuery bdgs = pl_.query(query);
+
+        for(PrologQuery::iterator it=bdgs.begin(); it != bdgs.end(); it++)
+        {
+            PrologBindings val = *it;
+
+            std::stringstream instanceVal;
+            instanceVal << val["Instance"];            
+            instance_name = instanceVal.str();
+
+            ROS_WARN_STREAM("new instance in knowledge base: " << instance_name);
+        }
+
+        bdgs.finish();
+        ID_++;
+
+        res.confirmation = true;
+        res.instance_name = instance_name;
+        return res.confirmation;
+    }
+
     // Example of how to assert queries to prolog
-    // void getClass(std::string className)
-    // {
-        
-    //     std::stringstream ss;
-    //     ss << "get_class('" << className << "')";
-
-    //     std:string query= ss.str();
-
-    //     ROS_INFO_STREAM("query: "<<query);
-
-    //     PrologQuery bdgs = pl_.query(query);
-
-    //     bool res = false;
-    //     for (auto &it : bdgs) 
-    //     {
-    //         res = true;
-    //         ROS_INFO_STREAM("A new class was created in the ontology");
-    //         break;
-    //     }
-    // }
     // TODO: remove both functions
     // bool assertKnowledge(std::string className)
     // {
