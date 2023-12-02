@@ -7,6 +7,11 @@
 #include <cocktail_bot/GetSceneObjectList.h>
 #include <cocktail_bot/GoToObject.h>
 
+enum class State {
+    IDLE,
+    EXPLORING,
+    MOVING_TO_TARGET
+};
 
 class Controller
 {
@@ -24,9 +29,16 @@ private:
     std::string srv_get_scene_name_;          // Name of the service provided by the map generator node
     ros::ServiceClient client_map_generator_; // Client to request information about objects in the scene
     
-    geometry_msgs::Pose tiago_pose;       // Pose of the robot
-    geometry_msgs::Pose obj_pose;         // Pose of the target
-    bool requested_obj;                   // Requested obj flag
+    State state_ = State::EXPLORING;   // Current state of the robot
+
+    double ANGULAR_VEL = 1.1;          // Angular velocity of the robot
+    double LINAR_VEL   = 0.1;          // Linear velocity of the robot
+
+    geometry_msgs::Pose tiago_pose;    // Pose of the robot
+    geometry_msgs::Pose target_pose;   // Pose of the target
+
+    std::vector<geometry_msgs::Pose> poi_poses; // Poses of the points of interest
+    std::size_t poi_index;                      // Index of the current point of interest
 
 public:
 
@@ -58,7 +70,7 @@ public:
         subs_topic_name_="/gazebo/model_states";
         sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &Controller::sub_gazebo_callback, this);
         
-        // Create publisher to send control actions to gazebo
+        // Create publisher to send controls to gazebo
         pub_controls_ = nh.advertise<geometry_msgs::Twist>("/key_vel", 100);
         controls_timer_ = nh.createTimer(ros::Duration(0.5), &Controller::controls_timer_callback, this);
     };
@@ -80,6 +92,13 @@ private:
     {
         ROS_INFO_STREAM("Request move to object: " << req.object_name);
 
+        // Check if the robot is idle
+        if (state_ != State::IDLE) {
+            ROS_ERROR_STREAM("Robot is not idle");
+            res.confirmation = false;
+            return true;
+        }
+
         cocktail_bot::GetSceneObjectList srv;
 
         srv.request.object_name = req.object_name;
@@ -99,8 +118,8 @@ private:
         }
 
         // Get the pose of the object
-        obj_pose = srv.response.objects.pose[0];
-        requested_obj = true;
+        target_pose = srv.response.objects.pose[0];
+        state_ = State::MOVING_TO_TARGET;
 
         res.confirmation = true;
         return res.confirmation;
@@ -120,18 +139,19 @@ private:
     }
 
     /**
-     * @brief Callback function to publish the controls to gazebo
+     * @brief Function to calculate the controls to move the robot to the target
      *
-     * @param e timer event
+     * @param target_pose pose of the target
+     * @return geometry_msgs::Twist controls to move the robot to the target
      */
-    void controls_timer_callback(const ros::TimerEvent& e)
+    geometry_msgs::Twist calculate_controls_to_target(geometry_msgs::Pose target_pose)
     {
-        if (!requested_obj) return;
+        // Create controls message
+        geometry_msgs::Twist controls_cmd;
 
         // Get position vectors
-        geometry_msgs::Twist tiago_twist_cmd;
         Eigen::Vector2d tiago_w = {tiago_pose.position.x, tiago_pose.position.y};
-        Eigen::Vector2d target_w = {obj_pose.position.x, obj_pose.position.y};
+        Eigen::Vector2d target_w = {target_pose.position.x, target_pose.position.y};
 
         Eigen::Vector2d Dpose_w = target_w - tiago_w;
 
@@ -145,16 +165,54 @@ private:
 
         // Calculate the angle to the target
         double theta = std::atan2(Dpose_tiago(1),Dpose_tiago(0));
-        double Kwz=1.1, Kvx=0.1;
-        tiago_twist_cmd.linear.x = Kvx*d;
-        tiago_twist_cmd.angular.z = Kwz*theta;
 
-        ROS_INFO_STREAM("Published msg: "<<tiago_twist_cmd);
-        pub_controls_.publish(tiago_twist_cmd);
+        controls_cmd.linear.x  = LINAR_VEL * d;
+        controls_cmd.angular.z = ANGULAR_VEL * theta;
 
-        if (tiago_twist_cmd.linear.x == 0. && abs(tiago_twist_cmd.angular.z) < 0.002) {
-            ROS_INFO_STREAM("Reached object");
-            requested_obj = false;
+        return controls_cmd;
+    }
+
+    /**
+     * @brief Callback function to publish the controls to gazebo
+     *
+     * @param e timer event
+     */
+    void controls_timer_callback(const ros::TimerEvent& e)
+    {
+        if (state_ == State::IDLE) return;
+
+        geometry_msgs::Twist controls_cmd;
+
+        if (state_ == State::EXPLORING) {
+            if (poi_index == poi_poses.size()) {
+                ROS_INFO_STREAM("Finished exploring");
+                state_ = State::IDLE;
+                return;
+            }
+
+            controls_cmd = calculate_controls_to_target(poi_poses[poi_index]);
+        }
+
+        if (state_ == State::MOVING_TO_TARGET) {
+            controls_cmd = calculate_controls_to_target(target_pose);
+        }
+
+        // Publish controls
+        pub_controls_.publish(controls_cmd);
+        ROS_INFO_STREAM("Published msg: " << controls_cmd);
+
+        // Check if the robot has reached the target
+        if (controls_cmd.linear.x == 0. && abs(controls_cmd.angular.z) < 0.002) {
+            if (state_ == State::EXPLORING)
+            {
+                ROS_INFO_STREAM("Reached point of interest");
+                poi_index++;
+            }
+            else
+            {
+                ROS_INFO_STREAM("Reached object");
+                state_ = State::IDLE;
+            }
         }
     }
 
