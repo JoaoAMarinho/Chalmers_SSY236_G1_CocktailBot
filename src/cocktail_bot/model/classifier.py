@@ -1,13 +1,27 @@
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.preprocessing import OneHotEncoder
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+from joblib import dump
 
 #Must be executed from the rep folder
-data = pd.read_csv('./src/cocktail_bot/dataset/data.csv')
+path = './src/cocktail_bot/model/'
+data = pd.read_csv(path + 'data.csv')
+
+#Encode category attribute shape
+encoder = OneHotEncoder(handle_unknown='ignore')
+encoded_data = encoder.fit_transform(data[['shape']]).toarray()
+encoded_names = encoder.get_feature_names_out(['shape'])
+print(encoded_names)
+encoded_df = pd.DataFrame(encoded_data, columns=encoded_names)
+
+data = pd.concat([data, encoded_df], axis=1)
+
 print(data.head())
+
 x = data.drop(['label','shape'], axis=1)  # Features
 
 y = data['label'] # Target
@@ -34,7 +48,7 @@ sns.heatmap(matrix, annot=True, fmt='d', cmap='Blues', xticklabels=data['label']
 plt.title('Confusion Matrix')
 plt.xlabel('Predicted')
 plt.ylabel('Actual')
-plt.savefig("cm.png")
+plt.savefig(path + "confussion_matrix.png")
 plt.close
 
 #Report
@@ -44,6 +58,11 @@ print(f'Classification Report:\n{classification_rep}')
 #Decision tree structure
 plt.figure(figsize=(20, 10))
 plot_tree(classifer, filled=True, feature_names=x.columns, class_names=data['label'].unique())
-plt.savefig("dt.png")
+plt.savefig(path + "decision_tree.png")
 plt.close
 
+
+classifer = DecisionTreeClassifier()
+classifer.fit(x,y)
+dump(classifer, path + 'classifier.joblib') 
+#load(path + 'classifier.joblib') 
