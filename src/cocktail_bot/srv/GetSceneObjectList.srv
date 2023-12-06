@@ -2,7 +2,7 @@
 string object_name
 
 ---
-# true if the target object was in the list
+# True if the target object was in the list
 bool obj_found
 # Target object, it could be one object or all the objects.
 gazebo_msgs/ModelStates objects

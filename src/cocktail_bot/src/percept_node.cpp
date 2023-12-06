@@ -31,7 +31,7 @@ private:
     
     std::vector<std::string> v_seen_obj_;     // List of objects seen by the robot and sent to the map generator node
 
-    std::map<std::string, cocktail_bot::ClassifyObject::Request> map_objs_info_; // Map with seen object characteristics
+    std::map<std::string, cocktail_bot::ClassifyObject> map_objs_info_; // Map with seen object characteristics
 
 public:
 
@@ -118,7 +118,7 @@ public:
             std::istringstream iss(line);
             std::string val;
             std::vector<std::string> vals;
-            cocktail_bot::ClassifyObject::Request srv_classifier_request;
+            cocktail_bot::ClassifyObject srv_classifier_request;
 
             while (std::getline(iss, val, ',')) {
                 vals.push_back(val);

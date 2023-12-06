@@ -75,6 +75,12 @@ For more details, please refer to the project's [Usage Guide](./docs/usage_guide
 
 1. ROS (distro Noetic)
 
+#### Install Pre-required Python Packages
+
+```bash
+pip install -r ./src/cocktail_bot/requirements.txt
+```
+
 ### Building and Running
 
 1. Build the project:
