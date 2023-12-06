@@ -26,7 +26,7 @@ private:
     std::string srv_update_knowledge_name_;   // Name of the service provided by the reasoning node
     ros::ServiceClient client_reasoning_;     // Client to request updates to the seen objects in the reasoning node
 
-    std::string srv_classify_object_name_;    // Name of the service provided by the classifier node
+    std::string srv_classify_obj_name_;       // Name of the service provided by the classifier node
     ros::ServiceClient client_classifier_;    // Client to request classification to classifier node
     
     std::vector<std::string> v_seen_obj_;     // List of objects seen by the robot and sent to the map generator node
@@ -43,7 +43,8 @@ public:
         v_seen_obj_.push_back("tiago");
         v_seen_obj_.push_back("ground_plane");
 
-        load_objects();
+        // Load object characteristics from the dataset
+        load_obj_characteristics();
 
         subs_topic_name_="/gazebo/model_states";
 
@@ -81,63 +82,23 @@ public:
 
 
         // Create client and wait until service is advertised
-        srv_classify_object_name_="classify_object";
-        client_classifier_ = nh.serviceClient<cocktail_bot::ClassifyObject>(srv_classify_object_name_);
+        srv_classify_obj_name_="classify_object";
+        client_classifier_ = nh.serviceClient<cocktail_bot::ClassifyObject>(srv_classify_obj_name_);
 
         // Wait for the service to be advertised
-        ROS_INFO("Waiting for service %s to be advertised...", srv_classify_object_name_.c_str());
-        service_found = ros::service::waitForService(srv_classify_object_name_, ros::Duration(30.0));
+        ROS_INFO("Waiting for service %s to be advertised...", srv_classify_obj_name_.c_str());
+        service_found = ros::service::waitForService(srv_classify_obj_name_, ros::Duration(30.0));
 
         if(!service_found)
         {
-            ROS_ERROR("Failed to call service %s", srv_classify_object_name_.c_str());
+            ROS_ERROR("Failed to call service %s", srv_classify_obj_name_.c_str());
             exit;
         }
 
-        ROS_INFO_STREAM("Connected to service: " << srv_classify_object_name_);
+        ROS_INFO_STREAM("Connected to service: " << srv_classify_obj_name_);
 
         // Create subscriber to receive gazebo model_states
         sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &Percept::sub_gazebo_callback, this);
-
-    };
-
-    void load_objects(){
-        // Open the CSV file
-        std::ifstream file("./src/cocktail_bot/model/env.csv");
-
-        if (!file.is_open()) {
-            ROS_INFO("Error opening objects file!");
-            return ;
-        }
-
-        std::string line;
-        // Skip first line
-        std::getline(file,line);
-        while (std::getline(file, line)) {
-            // Split the line by ','
-            std::istringstream iss(line);
-            std::string val;
-            std::vector<std::string> vals;
-            cocktail_bot::ClassifyObject srv_classifier_request;
-
-            while (std::getline(iss, val, ',')) {
-                vals.push_back(val);
-            }
-
-            srv_classifier_request.mass = std::stof(vals[1]);
-            srv_classifier_request.width = std::stof(vals[2]);
-            srv_classifier_request.height = std::stof(vals[3]);
-            srv_classifier_request.shape = vals[4];
-            srv_classifier_request.red = std::stoi(vals[5]);
-            srv_classifier_request.green = std::stoi(vals[6]);
-            srv_classifier_request.blue = std::stoi(vals[7]);
-            srv_classifier_request.alcohol = std::stoi(vals[8]);
-            map_objs_info_[vals[0]] = srv_classifier_request;
-            ROS_INFO_STREAM("Requested object: " << srv_classifier_request);
-        }
-
-        // Close the file
-        file.close();
     };
 
     ~Percept()
@@ -145,6 +106,51 @@ public:
     };
 
 private:
+
+    /**
+     * @brief Load object characteristics from the dataset
+     * 
+     */
+    void load_obj_characteristics(){
+        std::string FILE_PATH = "./src/cocktail_bot/model/datasets/env.csv";
+        
+        // Open the CSV file
+        std::ifstream file(FILE_PATH);
+
+        if (!file.is_open()) {
+            ROS_ERROR_STREAM("Failed to open object characteristics file!");
+            return;
+        }
+
+        std::string line;
+        std::vector<std::string> values;
+        std::string value;
+
+        // Skip first line
+        std::getline(file,line);
+        while (std::getline(file, line)) {
+            std::istringstream iss(line);
+            cocktail_bot::ClassifyObject srv_classifier;
+
+            // Split the line by ','
+            while (std::getline(iss, value, ',')) {
+                values.push_back(value);
+            }
+
+            srv_classifier.mass = std::stof(values[1]);
+            srv_classifier.width = std::stof(values[2]);
+            srv_classifier.height = std::stof(values[3]);
+            srv_classifier.shape = values[4];
+            srv_classifier.red = std::stoi(values[5]);
+            srv_classifier.green = std::stoi(values[6]);
+            srv_classifier.blue = std::stoi(values[7]);
+            srv_classifier.alcohol = std::stoi(values[8]);
+            map_objs_info_[values[0]] = srv_classifier;
+        }
+
+        // Close the file
+        file.close();
+    };
 
     /**
      * @brief Callback function to receive the gazebo model_states topic
