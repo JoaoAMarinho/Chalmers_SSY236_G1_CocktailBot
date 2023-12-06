@@ -34,7 +34,8 @@ of the predicates
     [
 	create_instance_from_class/3,
 	getClassPath/2,
-	get_class/1
+	get_class/1,
+	get_instances_for_class/3
     ]).
 
 :- use_module(library('semweb/rdfs')).
@@ -100,3 +101,17 @@ get_class(Class):-
 	getClassPath(Class,Class_path),
 	rdf_assert(Class_path, rdf:type, owl:'Class'),
 	write('New class created: '), write(Class), nl.
+
+% Blabla
+% smth
+%
+% @param
+get_instances_for_class(Class, Class_inst, P) :-
+	getClassPath(Class, Class_path),
+	rdf_has(Class_path, rdf:type, owl:'Class'),
+	(	rdfs_individual_of(Individuals, Class_path) -> Class_inst = Individuals
+	;	Class_inst = []),
+	write(Class_inst),
+	% TODO: read from existing properties
+	rdf_has(P, rdf:type, owl:'ObjectProperty'),
+	write('\n'), write(P).

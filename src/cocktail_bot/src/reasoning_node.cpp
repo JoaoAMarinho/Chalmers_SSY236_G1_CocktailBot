@@ -80,6 +80,10 @@ private:
     {
         ROS_INFO_STREAM("Requested cocktail: " << req.cocktail_name);
 
+        std::stringstream ss;
+        ss << "create_instance_from_class('" << req.cocktail_name << "', " << ID_ << ", Instance)";
+        
+
         res.confirmation = true;
         return res.confirmation;
     }

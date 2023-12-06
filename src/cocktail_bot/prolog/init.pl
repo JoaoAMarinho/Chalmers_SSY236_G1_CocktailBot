@@ -3,13 +3,12 @@
 :- register_ros_package(knowrob_common).
 
 
-:- consult('instance_utils').
 :- consult('cocktail_knowledge').
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % parse OWL files, register name spaces
-:- owl_parser:owl_parse('package:/cocktail_bot/owl/ssy236Ontology.owl').
+:- owl_parser:owl_parse('package://cocktail_bot/owl/ssy236Ontology.owl').
 :- rdf_db:rdf_register_ns(ssy236Ontology, 'http://www.chalmers.se/ontologies/ssy236Ontology.owl#', [keep(true)]).
 
 

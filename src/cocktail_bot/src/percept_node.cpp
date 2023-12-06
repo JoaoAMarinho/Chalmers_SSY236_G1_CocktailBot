@@ -137,14 +137,14 @@ private:
                 values.push_back(value);
             }
 
-            srv_classifier.mass = std::stof(values[1]);
-            srv_classifier.width = std::stof(values[2]);
-            srv_classifier.height = std::stof(values[3]);
-            srv_classifier.shape = values[4];
-            srv_classifier.red = std::stoi(values[5]);
-            srv_classifier.green = std::stoi(values[6]);
-            srv_classifier.blue = std::stoi(values[7]);
-            srv_classifier.alcohol = std::stoi(values[8]);
+            srv_classifier.request.mass = std::stof(values[1]);
+            srv_classifier.request.width = std::stof(values[2]);
+            srv_classifier.request.height = std::stof(values[3]);
+            srv_classifier.request.shape = values[4];
+            srv_classifier.request.red = std::stoi(values[5]);
+            srv_classifier.request.green = std::stoi(values[6]);
+            srv_classifier.request.blue = std::stoi(values[7]);
+            srv_classifier.request.alcohol = std::stoi(values[8]);
             map_objs_info_[values[0]] = srv_classifier;
         }
 
