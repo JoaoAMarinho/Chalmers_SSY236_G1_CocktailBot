@@ -3,6 +3,7 @@
 :- register_ros_package(knowrob_common).
 
 
+:- consult('instance_utils').
 :- consult('cocktail_knowledge').
 
 

@@ -3,12 +3,12 @@ import rospy
 from joblib import load
 import pandas as pd
 
-PATH = "./src/cocktail_bot/model/"
+PATH = "/home/user/exchange/src/cocktail_bot/model/"
 
 
 class Classifier:
     def __init__(self):
-        print("Created Classifier Node")
+        rospy.logwarn("Created Classifier Node")
 
         self.srv_classify_obj_name_ = "classify_object"
         classify_obj_srv_ = rospy.Service(

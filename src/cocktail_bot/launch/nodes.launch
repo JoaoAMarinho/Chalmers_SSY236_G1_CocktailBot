@@ -15,6 +15,9 @@
   <!-- Launch Reasoner -->
   <node pkg="cocktail_bot" type="reasoning_node" name="reasoning_node" output="screen" />
 
+  <!-- Launch Classifier -->
+  <node pkg="cocktail_bot" type="classifier_node.py" name="classifier_node" output="screen"/>
+
   <!-- Launch Percept -->
   <node pkg="cocktail_bot" type="percept_node" name="percept_node" output="screen" />
 </launch>

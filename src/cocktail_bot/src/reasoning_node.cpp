@@ -81,8 +81,22 @@ private:
         ROS_INFO_STREAM("Requested cocktail: " << req.cocktail_name);
 
         std::stringstream ss;
-        ss << "create_instance_from_class('" << req.cocktail_name << "', " << ID_ << ", Instance)";
+        ss << "get_instances_for_cocktail('" << req.cocktail_name << "', Ingredients, Ingred_inst, Alt_inst)";
         
+        std::string query = ss.str();
+        ROS_INFO_STREAM("Query: " << query);
+
+        PrologQuery bdgs = pl_.query(query);
+
+        for(PrologQuery::iterator it=bdgs.begin(); it != bdgs.end(); it++)
+        {
+            PrologBindings val = *it;
+            ROS_INFO_STREAM(val["Ingredients"]);
+            ROS_INFO_STREAM(val["Ingred_inst"]);
+            ROS_INFO_STREAM(val["Alt_inst"]);
+        }
+
+        bdgs.finish();
 
         res.confirmation = true;
         return res.confirmation;
@@ -97,9 +111,8 @@ private:
     bool srv_update_knowledge_callback(cocktail_bot::UpdateKnowledge::Request  &req,
                                        cocktail_bot::UpdateKnowledge::Response &res)
     {
+        // Class name's first letter must be in uppercase
         ROS_INFO_STREAM("Got new object of class: " << req.class_name);
-
-        std::string instance_name = req.class_name + "_" + std::to_string(ID_);
 
         std::stringstream ss;
         ss << "create_instance_from_class('" << req.class_name << "', " << ID_ << ", Instance)";
@@ -108,6 +121,7 @@ private:
         ROS_INFO_STREAM("Query: " << query);
 
         PrologQuery bdgs = pl_.query(query);
+        std::string instance_name;
 
         for(PrologQuery::iterator it=bdgs.begin(); it != bdgs.end(); it++)
         {

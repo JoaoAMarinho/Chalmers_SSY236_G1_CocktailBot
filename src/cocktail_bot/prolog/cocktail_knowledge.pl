@@ -43,15 +43,17 @@ cocktail_recipe(pina_colada, ['Rum', 'Coconut', 'Pineapple', 'Ice']).
 cocktail_recipe(strawberry_banana, ['Strawberry', 'Banana', 'Milk', 'Ice']).
 cocktail_recipe(apple_strawberry,  ['Apple', 'Strawberry', 'Ice']).
 
-
-% blabla
+% Obtain the ingredients and their instances for a given cocktail
 % get_instances_for_cocktail(+Cocktail, -Ingredients, -Ingredient_inst, -Alternative_inst)
-% smth
 %
-% @param
+% @param Cocktail		    name of the cocktail
+% @param Ingredients	    list of ingredients
+% @param Ingred_inst	    list of instances for each ingredient
+% @param Alt_inst		    list of alternative (storage) instances for each ingredient
+
 get_instances_for_cocktail(Cocktail, Ingredients, Ingred_inst, Alt_inst) :-
     cocktail_recipe(Cocktail, Ingredients), !,
-    write('Cocktail ['), write(Cocktail), write('] ingredients: '), write(Ingredients), nl,
+    write('Cocktail ['), write(Cocktail), write('] ingredients: '), write(Ingredients), nl, nl,
     get_instances_for_ingredients(Ingredients, Ingred_inst, Alt_inst).
 
 % In case the recipe does not exist
@@ -59,10 +61,13 @@ get_instances_for_cocktail(Cocktail, [], _, _) :-
     write('Cocktail ['), write(Cocktail),
     write('] is not present in the knowledge base!'), nl.
 
-% Blabla
-% smth
+% Obtain the instances for a list of ingredients
+% get_instances_for_ingredients(+Ingredients, -Ingred_inst, -Alt_inst)
 %
-% @param
+% @param Ingredients	    list of ingredients
+% @param Ingred_inst	    list of instances for each ingredient
+% @param Alt_inst		    list of alternative (storage) instances for each ingredient
+
 get_instances_for_ingredients([], [], []).
 get_instances_for_ingredients([Ingred|Ingredients], [Instances_I|Ingred_inst], [Instances_A|Alt_inst]) :-
     get_instances_for_class(Ingred, Instances_I, Instances_A),

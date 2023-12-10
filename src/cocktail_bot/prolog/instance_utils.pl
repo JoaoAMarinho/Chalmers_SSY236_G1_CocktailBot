@@ -33,7 +33,7 @@ of the predicates
 :- module(instance_utils,
     [
 	create_instance_from_class/3,
-	getClassPath/2,
+	get_class_path/2,
 	get_class/1,
 	get_instances_for_class/3
     ]).
@@ -58,24 +58,25 @@ of the predicates
 
 create_instance_from_class(Class, Instance_ID, Instance) :-
 	% Check ID and class path
-	getClassPath(Class,Class_path),
+	get_class_path(Class,Class_path),
 	
 	% Create the path of the new instance
 	atom_concat(Class_path,  '_', Class2),
 	atomic_concat(Class2, Instance_ID, Instance),
 	write('New instance created: '),write(Instance),nl,
+
 	% assert/create the new instance
 	rdf_assert(Instance, rdf:type, Class_path).
 
 % This function will return the path of the class/instance given
-% getClassPath(+Class, ?Class_path)
+% get_class_path(+Class, ?Class_path)
 %
 % @param Class		represents the name of the class where the instance will be created.
 %					Class could be of two forms:
 %					Class='Orange'  <- make sure this class exist in the ontology "ssy236Ontology"
 % @param Class_path	correct class full path
 
-getClassPath(Class, Class_path):-
+get_class_path(Class, Class_path):-
 	((concat_atom(List, '#', Class),length(List,Length),Length>1) ->
 	( % Class has already a URI
 	   Class_path=Class );
@@ -93,25 +94,48 @@ getClassPath(Class, Class_path):-
 %					Class='Orange'  <- make sure this class exist in the ontology "ssy236Ontology"
 
 get_class(Class):-
-	getClassPath(Class,Class_path),
+	get_class_path(Class,Class_path),
 	rdf_has(Class_path, rdf:type, owl:'Class'), !,
 	write(Class), write(' already exists!'), nl, fail.
 
 get_class(Class):-
-	getClassPath(Class,Class_path),
+	get_class_path(Class,Class_path),
 	rdf_assert(Class_path, rdf:type, owl:'Class'),
 	write('New class created: '), write(Class), nl.
 
-% Blabla
-% smth
+% This function will return the instances of a given class
+% get_instances_for_class(+Class, -Class_inst, -Alt_inst)
 %
-% @param
-get_instances_for_class(Class, Class_inst, P) :-
-	getClassPath(Class, Class_path),
+% @param Class			represents the name of the class to get the instances
+% @param Class_inst		list of instances for the given class
+% @param Alt_inst		list of alternative (storage) instances for the given class
+
+get_instances_for_class(Class, Class_inst, Alt_inst) :-
+	get_class_path(Class, Class_path),
 	rdf_has(Class_path, rdf:type, owl:'Class'),
-	(	rdfs_individual_of(Individuals, Class_path) -> Class_inst = Individuals
+	(	setof(X, rdfs_individual_of(X, Class_path), Individuals) -> Class_inst = Individuals
 	;	Class_inst = []),
-	write(Class_inst),
-	% TODO: read from existing properties
-	rdf_has(P, rdf:type, owl:'ObjectProperty'),
-	write('\n'), write(P).
+	write(Class), write(' instances: '), write(Class_inst), nl,
+	get_storage_for_class(Class_path, Storage),
+	(	setof(X, rdfs_individual_of(X, Storage), Storages) -> Alt_inst = Storages
+	;	Alt_inst = []),
+	write('Storage instances: '), write(Alt_inst), nl, nl.
+
+
+% This function will return the storage class for a given item class
+% get_storage_for_class(+Class, -Storage)
+%
+% @param Class			represents the name of the class to get the storage
+% @param Storage		storage class
+
+get_storage_for_class(Class, Storage) :-
+	( rdf_has(ssy236Ontology:freshStorage, rdfs:range, Class);
+	  rdf_has(ssy236Ontology:coldStorage, rdfs:range, Class);
+	  rdf_has(ssy236Ontology:condimentsStorage, rdfs:range, Class);
+	  rdf_has(ssy236Ontology:glassStorage, rdfs:range, Class) ),
+	rdf_has(ssy236Ontology:freshStorage, rdfs:domain, Storage), !.
+
+% If the storage class is not found, check the super class
+get_storage_for_class(Class, Storage) :-
+	rdf_has(Class, rdfs:subClassOf, SuperClass),
+	get_storage_for_class(SuperClass, Storage).
