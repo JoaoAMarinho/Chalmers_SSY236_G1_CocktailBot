@@ -6,29 +6,6 @@
 
 :- consult('instance_utils').
 
-% Facts representing available ingredients
-% ingredient(?Ingredient)
-
-% TODO: really necessary??
-ingredient(tequila).
-ingredient(rum).
-
-ingredient(soda).
-ingredient(milk).
-
-ingredient(salt).
-ingredient(sugar).
-
-ingredient(ice).
-
-ingredient(mint_leaves).
-ingredient(lime).
-ingredient(apple).
-ingredient(banana).
-ingredient(coconut).
-ingredient(pineapple).
-ingredient(strawberry).
-
 % Predicate defining cocktail recipes and their ingredients
 % cocktail_recipe(?Cocktail_name, ?Cocktail_ingredients)
 %

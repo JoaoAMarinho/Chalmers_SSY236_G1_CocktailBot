@@ -5,11 +5,12 @@
 
 #include <gazebo_msgs/ModelStates.h>
 #include <cocktail_bot/GetSceneObjectList.h>
-#include <cocktail_bot/GoToObject.h>
+#include <cocktail_bot/FindIngredients.h>
 
 enum class State {
     IDLE,
     EXPLORING,
+    AVAILABLE_TO_REQUEST,
     MOVING_TO_TARGET
 };
 
@@ -23,8 +24,8 @@ private:
     ros::Publisher pub_controls_;      // Publisher gazebo key_vel
     ros::Timer controls_timer_;        // Timer to publish control actions
     
-    std::string srv_go_to_obj_name_;   // Name of the service to move the robot to an object
-    ros::ServiceServer go_to_obj_srv_; // Service to move the robot to an object
+    std::string srv_find_ingredients_name_;   // Name of the service to make the robot look for ingredients
+    ros::ServiceServer find_ingredients_srv_; // Service to make the robot look for ingredients
     
     std::string srv_get_scene_name_;          // Name of the service provided by the map generator node
     ros::ServiceClient client_map_generator_; // Client to request information about objects in the scene
@@ -63,8 +64,8 @@ public:
         ROS_INFO_STREAM("Connected to service: " << srv_get_scene_name_);
 
         // Create service to move the robot to an object
-        srv_go_to_obj_name_ = "go_to_object";
-        go_to_obj_srv_ = nh.advertiseService(srv_go_to_obj_name_, &Controller::srv_go_to_obj_callback, this);
+        srv_find_ingredients_name_ = "find_ingredients";
+        find_ingredients_srv_ = nh.advertiseService(srv_find_ingredients_name_, &Controller::find_ingredients_callback, this);
 
         // Create subscriber to receive gazebo model_states
         subs_topic_name_="/gazebo/model_states";
@@ -82,26 +83,26 @@ public:
 private:
 
     /**
-     * @brief Callback function for the service that calculates the path to an object
+     * @brief Callback function for the service that makes the robot look for ingredients
      *
-     * @param Request requested object to move to
-     * @param Respose response from the service if the robot has reached the obj (true/false)
+     * @param Request requested ingredients information
+     * @param Respose response from the service if the robot can look for ingredients (true/false)
      */
-    bool srv_go_to_obj_callback(cocktail_bot::GoToObject::Request  &req,
-                                cocktail_bot::GoToObject::Response &res)
+    bool find_ingredients_callback(cocktail_bot::FindIngredients::Request  &req,
+                                   cocktail_bot::FindIngredients::Response &res)
     {
-        ROS_INFO_STREAM("Request move to object: " << req.object_name);
+        ROS_INFO_STREAM("Request find ingredients: " << req.ingredients.size());
 
-        // Check if the robot is idle
-        if (state_ != State::IDLE) {
-            ROS_ERROR_STREAM("Robot is not idle");
+        // Check if the robot is available to receive requests
+        if (state_ != State::AVAILABLE_TO_REQUEST) {
+            ROS_WARN_STREAM("Robot is not available to receive requests");
             res.confirmation = false;
             return true;
         }
 
         cocktail_bot::GetSceneObjectList srv;
 
-        srv.request.object_name = req.object_name;
+        srv.request.object_name = "TODO";
 
         if (!client_map_generator_.call(srv))
         {
@@ -114,7 +115,7 @@ private:
         {
             ROS_ERROR_STREAM("Object not found");
             res.confirmation = false;
-            return res.confirmation;
+            return true;
         }
 
         // Get the pose of the object
@@ -122,7 +123,7 @@ private:
         state_ = State::MOVING_TO_TARGET;
 
         res.confirmation = true;
-        return res.confirmation;
+        return true;
     }
 
     /**
@@ -179,14 +180,16 @@ private:
      */
     void controls_timer_callback(const ros::TimerEvent& e)
     {
-        if (state_ == State::IDLE) return;
+        // Check if the robot is trying to reach a target
+        if (state_ == State::IDLE ||
+            state_ == State::AVAILABLE_TO_REQUEST) return;
 
         geometry_msgs::Twist controls_cmd;
 
         if (state_ == State::EXPLORING) {
             if (poi_index == poi_poses.size()) {
                 ROS_INFO_STREAM("Finished exploring");
-                state_ = State::IDLE;
+                state_ = State::AVAILABLE_TO_REQUEST;
                 return;
             }
 

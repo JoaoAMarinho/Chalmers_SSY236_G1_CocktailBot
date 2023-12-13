@@ -66,7 +66,7 @@ add_service_files(
   UpdateObjectList.srv
   UpdateKnowledge.srv
   GetSceneObjectList.srv
-  GoToObject.srv
+  FindIngredients.srv
   MakeCocktail.srv
   ClassifyObject.srv
 )

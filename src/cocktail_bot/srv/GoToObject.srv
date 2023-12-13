@@ -1,6 +1,0 @@
-# Name of the target object to move to
-string object_name
-
----
-# True if the target object was in the list and was reached
-bool confirmation

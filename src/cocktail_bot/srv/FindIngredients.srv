@@ -1,0 +1,12 @@
+# Name of the  object to move to
+string[] ingredients
+
+# Name of the ingredient instances
+string[] ingredient_instances
+
+# Name of the containers related to the ingredients
+string[] alternative_instances
+
+---
+# True if the call was successful
+bool confirmation
