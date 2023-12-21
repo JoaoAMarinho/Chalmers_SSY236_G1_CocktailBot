@@ -108,6 +108,9 @@ public:
             pose.position.x = 10.;
             pose.position.y = 10.;
             pose.position.z = 2.;
+            pose.orientation.x = 0.;
+            pose.orientation.y = 0.;
+            pose.orientation.z = 0.;
 
             update_node_knowledge("Table", pose);
             //update_node_knowledge("glass", pose);

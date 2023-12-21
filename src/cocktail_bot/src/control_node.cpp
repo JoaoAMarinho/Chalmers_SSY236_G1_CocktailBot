@@ -11,7 +11,13 @@ enum class State {
     IDLE,
     EXPLORING,
     AVAILABLE_TO_REQUEST,
-    MOVING_TO_TARGET
+    MOVING_TO_TARGET,
+    FIND_INGREDIENT
+};
+
+struct IngredientPoses {
+    std::vector<geometry_msgs::Pose> instance_poses;
+    std::vector<geometry_msgs::Pose> alternative_poses;
 };
 
 class Controller
@@ -30,13 +36,14 @@ private:
     std::string srv_get_scene_name_;          // Name of the service provided by the map generator node
     ros::ServiceClient client_map_generator_; // Client to request information about objects in the scene
     
-    State state_ = State::EXPLORING;   // Current state of the robot
+    //State state_ = State::EXPLORING;   // Current state of the robot
+    State state_ = State::AVAILABLE_TO_REQUEST;   // TODO: testing purposes, remove later
 
     double ANGULAR_VEL = 1.1;          // Angular velocity of the robot
     double LINAR_VEL   = 0.1;          // Linear velocity of the robot
 
-    geometry_msgs::Pose tiago_pose;    // Pose of the robot
-    geometry_msgs::Pose target_pose;   // Pose of the target
+    geometry_msgs::Pose tiago_pose;                          // Pose of the robot
+    std::map<std::string, IngredientPoses> ingredient_map;   // Poses of the objects in the scene
 
     std::vector<geometry_msgs::Pose> poi_poses; // Poses of the points of interest
     std::size_t poi_index;                      // Index of the current point of interest
@@ -83,6 +90,26 @@ public:
 private:
 
     /**
+     * @brief Auxiliary function to convert a string to a vector of strings
+     *
+     * @param input string to be converted
+     * @return std::vector<std::string> vector of strings
+     */
+    std::vector<std::string> stringToVector(const std::string& input)
+    {
+        std::vector<std::string> result;
+        std::istringstream iss(input.substr(1, input.size() - 2));
+        std::string token;
+
+        while (std::getline(iss, token, ',')) {
+            // Add each token (substring) to the vector
+            result.push_back(token);
+        }
+
+        return result;
+    }
+
+    /**
      * @brief Callback function for the service that makes the robot look for ingredients
      *
      * @param Request requested ingredients information
@@ -91,14 +118,6 @@ private:
     bool find_ingredients_callback(cocktail_bot::FindIngredients::Request  &req,
                                    cocktail_bot::FindIngredients::Response &res)
     {
-        for (int i = 0; i < req.ingredients.size(); i++)
-        {
-            ROS_INFO_STREAM("Request find ingredients: " << req.ingredients[i]);
-            ROS_INFO_STREAM("Request ingredients inst: " << req.ingredient_instances[i]);
-            ROS_INFO_STREAM("Request ingredients alt: " << req.alternative_instances[i]);
-        }
-
-
         // Check if the robot is available to receive requests
         if (state_ != State::AVAILABLE_TO_REQUEST) {
             ROS_WARN_STREAM("Robot is not available to receive requests");
@@ -106,28 +125,63 @@ private:
             return true;
         }
 
-        cocktail_bot::GetSceneObjectList srv;
+        // Change the state of the robot
+        state_ = State::IDLE;
 
-        srv.request.object_name = "TODO";
-
-        if (!client_map_generator_.call(srv))
+        // Save the poses of the ingredients
+        IngredientPoses ingredient_poses;
+        for (int i = 0; i < req.ingredients.size(); i++)
         {
-            ROS_ERROR_STREAM("Failed to call service " << srv_get_scene_name_);
-            res.confirmation = false;
-            return res.confirmation;
+            // Save the poses of the ingredient instances
+            for (std::string instance : stringToVector(req.ingredient_instances[i]))
+            {
+                cocktail_bot::GetSceneObjectList srv;
+                srv.request.object_name = instance;
+
+                if (!client_map_generator_.call(srv))
+                {
+                    ROS_ERROR_STREAM("Failed to call service " << srv_get_scene_name_);
+                    res.confirmation = false;
+                    return true;
+                }
+
+                if (!srv.response.obj_found)
+                {
+                    ROS_ERROR_STREAM("Object not found!");
+                    res.confirmation = false;
+                    return true;
+                }
+
+                ingredient_poses.instance_poses.push_back(srv.response.objects.pose[0]);
+            }
+
+            // Save the poses of the alternative instances
+            for (std::string instance : stringToVector(req.alternative_instances[i]))
+            {
+                cocktail_bot::GetSceneObjectList srv;
+                srv.request.object_name = instance;
+
+                if (!client_map_generator_.call(srv))
+                {
+                    ROS_ERROR_STREAM("Failed to call service " << srv_get_scene_name_);
+                    res.confirmation = false;
+                    return true;
+                }
+
+                if (!srv.response.obj_found)
+                {
+                    ROS_ERROR_STREAM("Object not found!");
+                    res.confirmation = false;
+                    return true;
+                }
+
+                ingredient_poses.alternative_poses.push_back(srv.response.objects.pose[0]);
+            }
+
+            ingredient_map[req.ingredients[i]] = ingredient_poses;
         }
 
-        if (!srv.response.obj_found)
-        {
-            ROS_ERROR_STREAM("Object not found");
-            res.confirmation = false;
-            return true;
-        }
-
-        // Get the pose of the object
-        target_pose = srv.response.objects.pose[0];
-        state_ = State::MOVING_TO_TARGET;
-
+        state_ = State::FIND_INGREDIENT;
         res.confirmation = true;
         return true;
     }
@@ -203,7 +257,7 @@ private:
         }
 
         if (state_ == State::MOVING_TO_TARGET) {
-            controls_cmd = calculate_controls_to_target(target_pose);
+            //controls_cmd = calculate_controls_to_target(target_pose);
         }
 
         // Publish controls

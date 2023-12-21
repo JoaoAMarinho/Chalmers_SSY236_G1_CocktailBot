@@ -101,6 +101,7 @@ private:
         // If the requested obj as been seen, then send the pose
         if (map_objs_.find(req.object_name) != map_objs_.end())
         {
+            ROS_INFO_STREAM("The requested object " << req.object_name << " is in the list" << std::endl);
             res.objects.name.push_back(req.object_name);
             res.objects.pose.push_back(map_objs_[req.object_name]);
             res.obj_found = true;
@@ -108,7 +109,7 @@ private:
         else
         {
             std::stringstream s;
-            s << "The requested object [" << req.object_name << "] is not in the list." << std::endl;
+            s << "The requested object " << req.object_name << " is not in the list." << std::endl;
 
             s << "Available objects:" << std::endl;
             for (const auto &obj : map_objs_)
