@@ -91,7 +91,13 @@ private:
     bool find_ingredients_callback(cocktail_bot::FindIngredients::Request  &req,
                                    cocktail_bot::FindIngredients::Response &res)
     {
-        ROS_INFO_STREAM("Request find ingredients: " << req.ingredients.size());
+        for (int i = 0; i < req.ingredients.size(); i++)
+        {
+            ROS_INFO_STREAM("Request find ingredients: " << req.ingredients[i]);
+            ROS_INFO_STREAM("Request ingredients inst: " << req.ingredient_instances[i]);
+            ROS_INFO_STREAM("Request ingredients alt: " << req.alternative_instances[i]);
+        }
+
 
         // Check if the robot is available to receive requests
         if (state_ != State::AVAILABLE_TO_REQUEST) {

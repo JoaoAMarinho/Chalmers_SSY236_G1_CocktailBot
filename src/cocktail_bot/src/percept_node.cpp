@@ -174,7 +174,7 @@ private:
     void sub_gazebo_callback(const gazebo_msgs::ModelStates::ConstPtr& msg)
     {
         geometry_msgs::Pose tiago_pose;
-
+        return;
         // Search for tiago pose
         auto it = std::find(msg->name.begin(),  msg->name.end(), "tiago");
 

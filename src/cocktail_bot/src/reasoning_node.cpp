@@ -89,14 +89,30 @@ private:
         PrologQuery bdgs = pl_.query(query);
         res.confirmation = true;
 
-        for(PrologQuery::iterator it=bdgs.begin(); it != bdgs.end(); it++)
+        // Iterate over the first solution
+        for(PrologQuery::iterator prolog_it=bdgs.begin(); prolog_it != bdgs.end(); prolog_it++)
         {
-            PrologBindings val = *it;
+            PrologBindings val = *prolog_it;
 
-            std::vector<std::string> ingredients = val["Ingredients"];
-            std::vector<std::string> ingredient_instances = val["Ingred_inst"];
-            std::vector<std::string> alternative_instances = val["Alt_inst"];
-            if (ingredients.empty())
+            // Convert each returned value to a vector of strings
+            std::map<std::string, std::vector<std::string>> query_result;
+            for (std::map<std::string, PrologValue>::iterator map_it=val.begin(); map_it != val.end(); map_it++)
+            {
+                PrologValue value = map_it->second;
+
+                if (value.isList())
+                {
+                    std::vector<PrologValue> values = value.as<std::vector<PrologValue>>();
+                    std::vector<std::string> string_vect(values.size());
+                    std::transform(values.begin(), values.end(), string_vect.begin(), [](const PrologValue& val) {
+                        return val.toString();
+                    });
+                    query_result[map_it->first] = string_vect;
+                }
+            }
+
+            // Check if the query returned any ingredients
+            if (query_result["Ingredients"].empty())
             {
                 res.confirmation = false;
                 ROS_ERROR_STREAM("No ingredients found for cocktail: " << req.cocktail_name);
@@ -105,9 +121,9 @@ private:
 
             // Call service to find ingredients
             cocktail_bot::FindIngredients srv;
-            srv.request.ingredients = ingredients;
-            srv.request.ingredient_instances  = ingredient_instances;
-            srv.request.alternative_instances = alternative_instances;
+            srv.request.ingredients = query_result["Ingredients"];
+            srv.request.ingredient_instances  = query_result["Ingred_inst"];
+            srv.request.alternative_instances = query_result["Alt_inst"];
 
             if (!client_find_ingredients_.call(srv))
             {
@@ -121,8 +137,8 @@ private:
             {
                 res.confirmation = false;
                 ROS_ERROR_STREAM("Unsuccessfull call to: " << srv_find_ingredients_name_);
-                break;
             }
+            break;
         }
 
         bdgs.finish();
