@@ -10,6 +10,15 @@
 #include <cocktail_bot/MakeCocktail.h>
 #include <cocktail_bot/UpdateKnowledge.h>
 
+enum class State {
+    AVAILABLE_TO_REQUEST,
+    MAKING_COCKTAIL
+};
+
+struct IngredientInstances {
+    std::vector<std::string> instance_names;
+    std::vector<std::string> alternative_names;
+};
 
 class Reasoner
 {
@@ -19,12 +28,14 @@ private:
     std::string srv_find_ingredients_name_;      // Name of the service provided by the control node
     ros::ServiceClient client_find_ingredients_; // Client to request the robot to find ingredients
 
-    std::string srv_make_cocktail_name_;      // Name of the service to receive cocktail requests
-    ros::ServiceServer make_cocktail_srv_;    // Service to receive cocktail requests
+    std::string srv_make_cocktail_name_;         // Name of the service to receive cocktail requests
+    ros::ServiceServer make_cocktail_srv_;       // Service to receive cocktail requests
 
-    std::string srv_update_knowledge_name_;   // Name of the service to update the knowledge base
-    ros::ServiceServer update_knowledge_srv_; // Service to update the knowledge base
+    std::string srv_update_knowledge_name_;      // Name of the service to update the knowledge base
+    ros::ServiceServer update_knowledge_srv_;    // Service to update the knowledge base
 
+    State state_ = State::AVAILABLE_TO_REQUEST;  // Current state of the robot
+    std::map<std::string, IngredientInstances> ingredients_info; // Map to store the ingredients for the requested cocktail
     int ID_ = 0; // ID for the created instances
 
 public:
@@ -70,6 +81,26 @@ public:
 private:
 
     /**
+     * @brief Auxiliary function to convert a string to a vector of strings
+     *
+     * @param input string to be converted
+     * @return std::vector<std::string> vector of strings
+     */
+    std::vector<std::string> stringToVector(const std::string& input)
+    {
+        std::vector<std::string> result;
+        std::istringstream iss(input.substr(1, input.size() - 2));
+        std::string token;
+
+        while (std::getline(iss, token, ',')) {
+            // Add each token (substring) to the vector
+            result.push_back(token);
+        }
+
+        return result;
+    }
+
+    /**
      * @brief Callback function for the service that receives cocktail requests
      *
      * @param Request requested cocktail recipe
@@ -80,16 +111,24 @@ private:
     {
         ROS_INFO_STREAM("Requested cocktail: " << req.cocktail_name);
 
+        // Check if the robot is available to receive requests
+        if (state_ != State::AVAILABLE_TO_REQUEST) {
+            ROS_WARN_STREAM("Robot is not available to receive requests!");
+            res.confirmation = false;
+            return true;
+        }
+
+        state_ = State::MAKING_COCKTAIL;
+
+        // Build query to get the instances for the requested cocktail
         std::stringstream ss;
         ss << "get_instances_for_cocktail('" << req.cocktail_name << "', Ingredients, Ingred_inst, Alt_inst)";
-        
         std::string query = ss.str();
         ROS_INFO_STREAM("Query: " << query);
 
         PrologQuery bdgs = pl_.query(query);
-        res.confirmation = true;
-
-        // Iterate over the first solution
+        
+        // Iterate over one solution
         for(PrologQuery::iterator prolog_it=bdgs.begin(); prolog_it != bdgs.end(); prolog_it++)
         {
             PrologBindings val = *prolog_it;
@@ -111,38 +150,54 @@ private:
                 }
             }
 
-            // Check if the query returned any ingredients
-            if (query_result["Ingredients"].empty())
+            for (int i = 0; i < query_result["Ingredients"].size(); i++)
             {
-                res.confirmation = false;
-                ROS_ERROR_STREAM("No ingredients found for cocktail: " << req.cocktail_name);
-                break;
-            }
+                std::string ingredient = query_result["Ingredients"][i];
+                std::vector<std::string> ingredient_names  = stringToVector(query_result["Ingred_inst"])[i];
+                std::vector<std::string> alternative_names = stringToVector(query_result["Alt_inst"])[i];
 
-            // Call service to find ingredients
-            cocktail_bot::FindIngredients srv;
-            srv.request.ingredients = query_result["Ingredients"];
-            srv.request.ingredient_instances  = query_result["Ingred_inst"];
-            srv.request.alternative_instances = query_result["Alt_inst"];
-
-            if (!client_find_ingredients_.call(srv))
-            {
-                res.confirmation = false;
-                ROS_ERROR_STREAM("Failed to call service " << srv_find_ingredients_name_);
-                bdgs.finish();
-                return false;
-            }
-
-            if (!srv.response.confirmation)
-            {
-                res.confirmation = false;
-                ROS_ERROR_STREAM("Unsuccessfull call to: " << srv_find_ingredients_name_);
+                // Add the ingredient to the map
+                IngredientInstances ingredient_instances;
+                ingredient_instances.instance_names    = ingredient_names;
+                ingredient_instances.alternative_names = alternative_names;
+                ingredients_info[ingredient] = ingredient_instances;
             }
             break;
         }
-
+        
         bdgs.finish();
 
+        // Check if the query returned any ingredients
+        if (ingredients_info.empty())
+        {
+            res.confirmation = false;
+            ROS_ERROR_STREAM("No ingredients found for cocktail: " << req.cocktail_name);
+            state_ = State::AVAILABLE_TO_REQUEST;
+            return true;
+        }
+
+        // Call service to start making cocktail
+        ROS_INFO_STREAM("Started making cocktail: " << req.cocktail_name);
+        //TODO: call service to start making cocktail
+        // cocktail_bot::FindIngredients srv;
+        // srv.request.ingredients = query_result["Ingredients"];
+        // srv.request.ingredient_instances  = query_result["Ingred_inst"];
+        // srv.request.alternative_instances = query_result["Alt_inst"];
+
+        // if (!client_find_ingredients_.call(srv))
+        // {
+        //     res.confirmation = false;
+        //     ROS_ERROR_STREAM("Failed to call service " << srv_find_ingredients_name_);
+        //     return false;
+        // }
+
+        // if (!srv.response.confirmation)
+        // {
+        //     res.confirmation = false;
+        //     ROS_ERROR_STREAM("Unsuccessfull call to: " << srv_find_ingredients_name_);
+        // }
+
+        res.confirmation = true;
         return true;
     }
 
