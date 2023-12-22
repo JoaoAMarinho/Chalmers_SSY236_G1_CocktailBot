@@ -69,6 +69,8 @@ add_service_files(
   FindIngredients.srv
   MakeCocktail.srv
   ClassifyObject.srv
+  ArriveToObject.srv
+  IsCloseToObject.srv
 )
 
 ## Generate actions in the 'action' folder

@@ -1,0 +1,7 @@
+# Current pose of the robot
+string object_name
+geometry_msgs/Pose current_pose
+
+---
+# Confirmation of request
+bool confirmation

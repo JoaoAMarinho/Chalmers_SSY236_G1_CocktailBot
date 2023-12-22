@@ -6,6 +6,7 @@
 #include <gazebo_msgs/ModelStates.h>
 #include <cocktail_bot/GetSceneObjectList.h>
 #include <cocktail_bot/FindIngredients.h>
+#include <cocktail_bot/ArriveToObject.h>
 
 enum class State {
     IDLE,
@@ -35,6 +36,10 @@ private:
     
     std::string srv_get_scene_name_;          // Name of the service provided by the map generator node
     ros::ServiceClient client_map_generator_; // Client to request information about objects in the scene
+
+    // TODO send arrive to object message
+    std::string srv_arrive_to_object_name_;      // Name of the service provided by the reasoning node
+    ros::ServiceClient client_arrive_to_object_; // Client to inform that object robot arrive to object
     
     //State state_ = State::EXPLORING;   // Current state of the robot
     State state_ = State::AVAILABLE_TO_REQUEST;   // TODO: testing purposes, remove later
@@ -69,6 +74,22 @@ public:
         }
 
         ROS_INFO_STREAM("Connected to service: " << srv_get_scene_name_);
+
+        // Create client and wait until service is advertised
+        srv_arrive_to_object_name_ = "arrive_to_object";
+        client_arrive_to_object_ = nh.serviceClient<cocktail_bot::ArriveToObject>(srv_arrive_to_object_name_);
+
+        // Wait for the service to be advertised
+        ROS_INFO("Waiting for service %s to be advertised...", srv_arrive_to_object_name_.c_str());
+        service_found = ros::service::waitForService(srv_arrive_to_object_name_, ros::Duration(30.0));
+
+        if(!service_found)
+        {
+            ROS_ERROR("Failed to call service %s", srv_arrive_to_object_name_.c_str());
+            exit;
+        }
+
+        ROS_INFO_STREAM("Connected to service: " << srv_arrive_to_object_name_);
 
         // Create service to move the robot to an object
         srv_find_ingredients_name_ = "find_ingredients";
@@ -275,6 +296,14 @@ private:
             {
                 ROS_INFO_STREAM("Reached object");
                 state_ = State::IDLE;
+                cocktail_bot::ArriveToObject srv;
+
+                srv.request.object_name = "";
+                srv.request.current_pose = tiago_pose;
+
+                client_arrive_to_object_.call(srv);
+                //Arrive to object
+
             }
         }
     }

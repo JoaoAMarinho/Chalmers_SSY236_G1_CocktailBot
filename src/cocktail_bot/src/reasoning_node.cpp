@@ -9,6 +9,8 @@
 #include <cocktail_bot/FindIngredients.h>
 #include <cocktail_bot/MakeCocktail.h>
 #include <cocktail_bot/UpdateKnowledge.h>
+#include <cocktail_bot/IsCloseToObject.h>
+#include <cocktail_bot/ArriveToObject.h>
 
 enum class State {
     AVAILABLE_TO_REQUEST,
@@ -28,11 +30,17 @@ private:
     std::string srv_find_ingredients_name_;      // Name of the service provided by the control node
     ros::ServiceClient client_find_ingredients_; // Client to request the robot to find ingredients
 
+    std::string srv_is_close_to_object_name_;      // Name of the service provided by map generator node
+    ros::ServiceClient client_is_close_to_object_; // Client to ask robot is close to object
+
     std::string srv_make_cocktail_name_;         // Name of the service to receive cocktail requests
     ros::ServiceServer make_cocktail_srv_;       // Service to receive cocktail requests
 
     std::string srv_update_knowledge_name_;      // Name of the service to update the knowledge base
     ros::ServiceServer update_knowledge_srv_;    // Service to update the knowledge base
+
+    std::string srv_arrive_to_object_name_;   // Name of the service to receive arrive to object status
+    ros::ServiceServer arrive_to_object_srv_; // Service to receive arrive to object request
 
     State state_ = State::AVAILABLE_TO_REQUEST;  // Current state of the robot
     std::map<std::string, IngredientInstances> ingredients_info; // Map to store the ingredients for the requested cocktail
@@ -65,6 +73,22 @@ public:
 
         ROS_INFO_STREAM("Connected to service: " << srv_find_ingredients_name_);
 
+        // Create client and wait until service is advertised
+        srv_is_close_to_object_name_ = "is_close_to_object";
+        client_is_close_to_object_ = nh.serviceClient<cocktail_bot::IsCloseToObject>(srv_is_close_to_object_name_);
+
+        // Wait for the service to be advertised
+        ROS_INFO("Waiting for service %s to be advertised...", srv_is_close_to_object_name_.c_str());
+        service_found = ros::service::waitForService(srv_is_close_to_object_name_, ros::Duration(30.0));
+
+        if (!service_found)
+        {
+            ROS_ERROR("Failed to call service %s", srv_is_close_to_object_name_.c_str());
+            exit;
+        }
+
+        ROS_INFO_STREAM("Connected to service: " << srv_is_close_to_object_name_);
+
         // Create service to receive cocktail requests
         srv_make_cocktail_name_ = "make_cocktail";
         make_cocktail_srv_ = nh.advertiseService(srv_make_cocktail_name_, &Reasoner::srv_make_cocktail_callback, this);
@@ -72,6 +96,10 @@ public:
         // Create service to update the knowledge base
         srv_update_knowledge_name_ = "update_knowledge";
         update_knowledge_srv_ = nh.advertiseService(srv_update_knowledge_name_, &Reasoner::srv_update_knowledge_callback, this);
+
+        // Create service to receive arrive to object
+        srv_arrive_to_object_name_ = "arrive_to_object";
+        arrive_to_object_srv_ = nh.advertiseService(srv_arrive_to_object_name_, &Reasoner::srv_arrive_to_object_callback, this);
     };
 
     ~Reasoner()
@@ -153,8 +181,8 @@ private:
             for (int i = 0; i < query_result["Ingredients"].size(); i++)
             {
                 std::string ingredient = query_result["Ingredients"][i];
-                std::vector<std::string> ingredient_names  = stringToVector(query_result["Ingred_inst"])[i];
-                std::vector<std::string> alternative_names = stringToVector(query_result["Alt_inst"])[i];
+                std::vector<std::string> ingredient_names  = stringToVector(query_result["Ingred_inst"][i]);
+                std::vector<std::string> alternative_names = stringToVector(query_result["Alt_inst"][i]);
 
                 // Add the ingredient to the map
                 IngredientInstances ingredient_instances;
@@ -196,6 +224,45 @@ private:
         //     res.confirmation = false;
         //     ROS_ERROR_STREAM("Unsuccessfull call to: " << srv_find_ingredients_name_);
         // }
+
+        res.confirmation = true;
+        return true;
+    }
+
+    bool srv_arrive_to_object_callback(cocktail_bot::ArriveToObject::Request &req,
+                                       cocktail_bot::ArriveToObject::Response &res)
+    {   
+        // TODO implement arrive to object
+        if(req.object_name == ""){
+            res.confirmation = false;
+            return false;
+        }
+        cocktail_bot::IsCloseToObject srv;
+
+        // Check if it is instance being explored
+
+        //TODO Alternative wait for 2s
+
+        //TODO Call prolog to get object name
+
+        // Check if close to object
+        srv.request.object_name = "Table_1";
+        srv.request.current_pose = req.current_pose;
+
+        if (!client_is_close_to_object_.call(srv))
+        {
+            res.confirmation = false;
+            ROS_ERROR_STREAM("Failed to call service " << srv_is_close_to_object_name_);
+            return false;
+        }
+        
+        // TODO handle request
+        if(srv.response.isClose){
+            
+        }
+        else {
+            
+        }
 
         res.confirmation = true;
         return true;

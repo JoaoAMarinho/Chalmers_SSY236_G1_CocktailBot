@@ -9,6 +9,7 @@
 
 #include <cocktail_bot/UpdateObjectList.h>
 #include <cocktail_bot/GetSceneObjectList.h>
+#include <cocktail_bot/IsCloseToObject.h>
 
 
 class MapGenerator
@@ -20,6 +21,9 @@ private:
 
     std::string srv_get_scene_name_;         // Name of the service to provide information about requested seen objects
     ros::ServiceServer get_scene_obj_srv_;   // Service to send the pose of a target object(s) in the scene
+
+    std::string srv_is_close_to_object_name_;     // Name of the is close to object service
+    ros::ServiceServer is_close_to_object_srv_;   // Service to check if a object is close to tiago
 
     ros::Timer tf_timer_;                    // Timer to publish the TFs
     tf::TransformBroadcaster broadcaster_;   // TF broadcaster
@@ -39,6 +43,10 @@ public:
         // Create service to get the seen obj info
         srv_get_scene_name_ = "get_scene_object_list";
         get_scene_obj_srv_ = nh.advertiseService(srv_get_scene_name_, &MapGenerator::srv_get_scene_obj_callback, this);
+
+        // Create service to check if object is close
+        srv_is_close_to_object_name_ = "is_close_to_object";
+        is_close_to_object_srv_ = nh.advertiseService(srv_is_close_to_object_name_, &MapGenerator::srv_is_close_to_object_callback, this);
 
         // Create timer to publish TFs
         tf_timer_ = nh.createTimer(ros::Duration(1), &MapGenerator::tf_timer_callback, this);
@@ -123,6 +131,29 @@ private:
         }
 
         return true;
+    }
+
+    bool srv_is_close_to_object_callback(cocktail_bot::IsCloseToObject::Request  &req,
+                                    cocktail_bot::IsCloseToObject::Response &res)
+    {
+        geometry_msgs::Pose current_pose = req.current_pose;
+        geometry_msgs::Pose obj_pose;
+
+        if (map_objs_.find(req.object_name) != map_objs_.end())
+        {
+            obj_pose = map_objs_[req.object_name];
+            res.isClose = false;
+
+            double dx    = current_pose.position.x - obj_pose.position.x;
+            double dy    = current_pose.position.y - obj_pose.position.y;
+            double dist  = sqrt(pow(dx, 2)+ pow(dy, 2));
+
+            // If the robot is close enought to the obj say it is close
+            if (dist < 2){
+                res.isClose = true;
+            }
+        }
+        return res.isClose;
     }
 
 

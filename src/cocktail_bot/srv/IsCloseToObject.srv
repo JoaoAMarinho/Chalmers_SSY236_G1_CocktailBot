@@ -1,0 +1,8 @@
+# Name of the object
+string object_name
+# Current pose of the robot
+geometry_msgs/Pose current_pose
+
+---
+# Response to if it is close
+bool isClose
