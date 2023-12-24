@@ -57,6 +57,18 @@ public:
         if(pl_.waitForServer())
             pl_ = PrologClient("/rosprolog", true);
 
+        // Create service to receive cocktail requests
+        srv_make_cocktail_name_ = "make_cocktail";
+        make_cocktail_srv_ = nh.advertiseService(srv_make_cocktail_name_, &Reasoner::srv_make_cocktail_callback, this);
+
+        // Create service to update the knowledge base
+        srv_update_knowledge_name_ = "update_knowledge";
+        update_knowledge_srv_ = nh.advertiseService(srv_update_knowledge_name_, &Reasoner::srv_update_knowledge_callback, this);
+
+        // Create service to receive arrive to object
+        srv_arrive_to_object_name_ = "arrive_to_object";
+        arrive_to_object_srv_ = nh.advertiseService(srv_arrive_to_object_name_, &Reasoner::srv_arrive_to_object_callback, this);
+
         // Create client and wait until service is advertised
         srv_find_ingredients_name_ = "find_ingredients";
         client_find_ingredients_ = nh.serviceClient<cocktail_bot::FindIngredients>(srv_find_ingredients_name_);
@@ -88,18 +100,6 @@ public:
         }
 
         ROS_INFO_STREAM("Connected to service: " << srv_is_close_to_object_name_);
-
-        // Create service to receive cocktail requests
-        srv_make_cocktail_name_ = "make_cocktail";
-        make_cocktail_srv_ = nh.advertiseService(srv_make_cocktail_name_, &Reasoner::srv_make_cocktail_callback, this);
-
-        // Create service to update the knowledge base
-        srv_update_knowledge_name_ = "update_knowledge";
-        update_knowledge_srv_ = nh.advertiseService(srv_update_knowledge_name_, &Reasoner::srv_update_knowledge_callback, this);
-
-        // Create service to receive arrive to object
-        srv_arrive_to_object_name_ = "arrive_to_object";
-        arrive_to_object_srv_ = nh.advertiseService(srv_arrive_to_object_name_, &Reasoner::srv_arrive_to_object_callback, this);
     };
 
     ~Reasoner()
@@ -137,7 +137,7 @@ private:
     bool srv_make_cocktail_callback(cocktail_bot::MakeCocktail::Request  &req,
                                     cocktail_bot::MakeCocktail::Response &res)
     {
-        ROS_INFO_STREAM("Requested cocktail: " << req.cocktail_name);
+        ROS_WARN_STREAM("Requested cocktail: " << req.cocktail_name);
 
         // Check if the robot is available to receive requests
         if (state_ != State::AVAILABLE_TO_REQUEST) {
@@ -206,24 +206,29 @@ private:
 
         // Call service to start making cocktail
         ROS_INFO_STREAM("Started making cocktail: " << req.cocktail_name);
-        //TODO: call service to start making cocktail
-        // cocktail_bot::FindIngredients srv;
-        // srv.request.ingredients = query_result["Ingredients"];
-        // srv.request.ingredient_instances  = query_result["Ingred_inst"];
-        // srv.request.alternative_instances = query_result["Alt_inst"];
 
-        // if (!client_find_ingredients_.call(srv))
-        // {
-        //     res.confirmation = false;
-        //     ROS_ERROR_STREAM("Failed to call service " << srv_find_ingredients_name_);
-        //     return false;
-        // }
+        for (int i = 0; i < ingredients_info["Ingredient"].instance_names.size(); i++)
+        {
+            std::string ingredient = ingredients_info["Ingredient"].instance_names[i];
+            std::string alternative = ingredients_info["Ingredient"].alternative_names[i];
 
-        // if (!srv.response.confirmation)
-        // {
-        //     res.confirmation = false;
-        //     ROS_ERROR_STREAM("Unsuccessfull call to: " << srv_find_ingredients_name_);
-        // }
+            cocktail_bot::FindIngredients srv;
+            srv.request.ingredients = ingredient;
+            srv.request.alternative = alternative;
+
+            if (!client_find_ingredients_.call(srv))
+            {
+                res.confirmation = false;
+                ROS_ERROR_STREAM("Failed to call service " << srv_find_ingredients_name_);
+                return false;
+            }
+
+            if (!srv.response.confirmation)
+            {
+                res.confirmation = false;
+                ROS_ERROR_STREAM("Unsuccessfull call to: " << srv_find_ingredients_name_);
+            }
+        }
 
         res.confirmation = true;
         return true;
@@ -233,36 +238,36 @@ private:
                                        cocktail_bot::ArriveToObject::Response &res)
     {   
         // TODO implement arrive to object
-        if(req.object_name == ""){
-            res.confirmation = false;
-            return false;
-        }
-        cocktail_bot::IsCloseToObject srv;
+        // if(req.object_name == ""){
+        //     res.confirmation = false;
+        //     return false;
+        // }
+        // cocktail_bot::IsCloseToObject srv;
 
-        // Check if it is instance being explored
+        // // Check if it is instance being explored
 
-        //TODO Alternative wait for 2s
+        // //TODO Alternative wait for 2s
 
-        //TODO Call prolog to get object name
+        // //TODO Call prolog to get object name
 
-        // Check if close to object
-        srv.request.object_name = "Table_1";
-        srv.request.current_pose = req.current_pose;
+        // // Check if close to object
+        // srv.request.object_name = "Table_1";
+        // srv.request.current_pose = req.current_pose;
 
-        if (!client_is_close_to_object_.call(srv))
-        {
-            res.confirmation = false;
-            ROS_ERROR_STREAM("Failed to call service " << srv_is_close_to_object_name_);
-            return false;
-        }
+        // if (!client_is_close_to_object_.call(srv))
+        // {
+        //     res.confirmation = false;
+        //     ROS_ERROR_STREAM("Failed to call service " << srv_is_close_to_object_name_);
+        //     return false;
+        // }
         
-        // TODO handle request
-        if(srv.response.isClose){
+        // // TODO handle request
+        // if(srv.response.isClose){
             
-        }
-        else {
+        // }
+        // else {
             
-        }
+        // }
 
         res.confirmation = true;
         return true;

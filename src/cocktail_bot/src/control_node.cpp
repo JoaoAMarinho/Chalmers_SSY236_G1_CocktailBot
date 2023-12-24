@@ -59,6 +59,18 @@ public:
     {
         ROS_WARN_STREAM("Created Controller Node");
 
+        // Create service to move the robot to an object
+        srv_find_ingredients_name_ = "find_ingredients";
+        find_ingredients_srv_ = nh.advertiseService(srv_find_ingredients_name_, &Controller::find_ingredients_callback, this);
+
+        // Create subscriber to receive gazebo model_states
+        subs_topic_name_="/gazebo/model_states";
+        sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &Controller::sub_gazebo_callback, this);
+        
+        // Create publisher to send controls to gazebo
+        pub_controls_ = nh.advertise<geometry_msgs::Twist>("/key_vel", 100);
+        controls_timer_ = nh.createTimer(ros::Duration(0.5), &Controller::controls_timer_callback, this);
+
         // Create client and wait until service is advertised
         srv_get_scene_name_ = "get_scene_object_list";
         client_map_generator_ = nh.serviceClient<cocktail_bot::GetSceneObjectList>(srv_get_scene_name_);
@@ -90,18 +102,6 @@ public:
         }
 
         ROS_INFO_STREAM("Connected to service: " << srv_arrive_to_object_name_);
-
-        // Create service to move the robot to an object
-        srv_find_ingredients_name_ = "find_ingredients";
-        find_ingredients_srv_ = nh.advertiseService(srv_find_ingredients_name_, &Controller::find_ingredients_callback, this);
-
-        // Create subscriber to receive gazebo model_states
-        subs_topic_name_="/gazebo/model_states";
-        sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &Controller::sub_gazebo_callback, this);
-        
-        // Create publisher to send controls to gazebo
-        pub_controls_ = nh.advertise<geometry_msgs::Twist>("/key_vel", 100);
-        controls_timer_ = nh.createTimer(ros::Duration(0.5), &Controller::controls_timer_callback, this);
     };
 
     ~Controller()
