@@ -5,15 +5,14 @@
 
 #include <gazebo_msgs/ModelStates.h>
 #include <cocktail_bot/GetSceneObjectList.h>
-#include <cocktail_bot/FindIngredients.h>
-#include <cocktail_bot/ArriveToObject.h>
+#include <cocktail_bot/MoveToObject.h>
+#include <cocktail_bot/ArrivedToObject.h>
 
 enum class State {
     IDLE,
     EXPLORING,
     AVAILABLE_TO_REQUEST,
-    MOVING_TO_TARGET,
-    FIND_INGREDIENT
+    MOVING_TO_OBJECT
 };
 
 struct IngredientPoses {
@@ -31,15 +30,15 @@ private:
     ros::Publisher pub_controls_;      // Publisher gazebo key_vel
     ros::Timer controls_timer_;        // Timer to publish control actions
     
-    std::string srv_find_ingredients_name_;   // Name of the service to make the robot look for ingredients
-    ros::ServiceServer find_ingredients_srv_; // Service to make the robot look for ingredients
+    std::string srv_move_to_object_name_;   // Name of the service to make the robot move to an object
+    ros::ServiceServer move_to_object_srv_; // Service to make the robot move to an object
     
     std::string srv_get_scene_name_;          // Name of the service provided by the map generator node
     ros::ServiceClient client_map_generator_; // Client to request information about objects in the scene
 
     // TODO send arrive to object message
-    std::string srv_arrive_to_object_name_;      // Name of the service provided by the reasoning node
-    ros::ServiceClient client_arrive_to_object_; // Client to inform that object robot arrive to object
+    std::string srv_arrived_to_object_name_;      // Name of the service provided by the reasoning node
+    ros::ServiceClient client_arrived_to_object_; // Client to inform that object robot arrive to object
     
     //State state_ = State::EXPLORING;   // Current state of the robot
     State state_ = State::AVAILABLE_TO_REQUEST;   // TODO: testing purposes, remove later
@@ -47,8 +46,8 @@ private:
     double ANGULAR_VEL = 1.1;          // Angular velocity of the robot
     double LINAR_VEL   = 0.1;          // Linear velocity of the robot
 
-    geometry_msgs::Pose tiago_pose;                          // Pose of the robot
-    std::map<std::string, IngredientPoses> ingredient_map;   // Poses of the objects in the scene
+    geometry_msgs::Pose tiago_pose;    // Pose of the robot
+    geometry_msgs::Pose target_pose;   // Pose of the target
 
     std::vector<geometry_msgs::Pose> poi_poses; // Poses of the points of interest
     std::size_t poi_index;                      // Index of the current point of interest
@@ -60,8 +59,8 @@ public:
         ROS_WARN_STREAM("Created Controller Node");
 
         // Create service to move the robot to an object
-        srv_find_ingredients_name_ = "find_ingredients";
-        find_ingredients_srv_ = nh.advertiseService(srv_find_ingredients_name_, &Controller::find_ingredients_callback, this);
+        srv_move_to_object_name_ = "move_to_object";
+        move_to_object_srv_ = nh.advertiseService(srv_move_to_object_name_, &Controller::move_to_object_callback, this);
 
         // Create subscriber to receive gazebo model_states
         subs_topic_name_="/gazebo/model_states";
@@ -88,20 +87,20 @@ public:
         ROS_INFO_STREAM("Connected to service: " << srv_get_scene_name_);
 
         // Create client and wait until service is advertised
-        srv_arrive_to_object_name_ = "arrive_to_object";
-        client_arrive_to_object_ = nh.serviceClient<cocktail_bot::ArriveToObject>(srv_arrive_to_object_name_);
+        srv_arrived_to_object_name_ = "arrived_to_object";
+        client_arrived_to_object_ = nh.serviceClient<cocktail_bot::ArrivedToObject>(srv_arrived_to_object_name_);
 
         // Wait for the service to be advertised
-        ROS_INFO("Waiting for service %s to be advertised...", srv_arrive_to_object_name_.c_str());
-        service_found = ros::service::waitForService(srv_arrive_to_object_name_, ros::Duration(30.0));
+        ROS_INFO("Waiting for service %s to be advertised...", srv_arrived_to_object_name_.c_str());
+        service_found = ros::service::waitForService(srv_arrived_to_object_name_, ros::Duration(30.0));
 
         if(!service_found)
         {
-            ROS_ERROR("Failed to call service %s", srv_arrive_to_object_name_.c_str());
+            ROS_ERROR("Failed to call service %s", srv_arrived_to_object_name_.c_str());
             exit;
         }
 
-        ROS_INFO_STREAM("Connected to service: " << srv_arrive_to_object_name_);
+        ROS_INFO_STREAM("Connected to service: " << srv_arrived_to_object_name_);
     };
 
     ~Controller()
@@ -111,99 +110,53 @@ public:
 private:
 
     /**
-     * @brief Auxiliary function to convert a string to a vector of strings
-     *
-     * @param input string to be converted
-     * @return std::vector<std::string> vector of strings
-     */
-    std::vector<std::string> stringToVector(const std::string& input)
-    {
-        std::vector<std::string> result;
-        std::istringstream iss(input.substr(1, input.size() - 2));
-        std::string token;
-
-        while (std::getline(iss, token, ',')) {
-            // Add each token (substring) to the vector
-            result.push_back(token);
-        }
-
-        return result;
-    }
-
-    /**
      * @brief Callback function for the service that makes the robot look for ingredients
      *
      * @param Request requested ingredients information
      * @param Respose response from the service if the robot can look for ingredients (true/false)
      */
-    bool find_ingredients_callback(cocktail_bot::FindIngredients::Request  &req,
-                                   cocktail_bot::FindIngredients::Response &res)
+    bool move_to_object_callback(cocktail_bot::MoveToObject::Request  &req,
+                                 cocktail_bot::MoveToObject::Response &res)
     {
         // Check if the robot is available to receive requests
-        if (state_ != State::AVAILABLE_TO_REQUEST) {
+        if (state_ != State::AVAILABLE_TO_REQUEST)
+        {
             ROS_WARN_STREAM("Robot is not available to receive requests");
-            res.confirmation = false;
-            return true;
+            return false;
         }
 
         // Change the state of the robot
         state_ = State::IDLE;
 
-        // Save the poses of the ingredients
-        IngredientPoses ingredient_poses;
-        for (int i = 0; i < req.ingredients.size(); i++)
+        // Check for cocktail start
+        if (req.object_name == "START_COCKTAIL")
         {
-            // Save the poses of the ingredient instances
-            for (std::string instance : stringToVector(req.ingredient_instances[i]))
-            {
-                cocktail_bot::GetSceneObjectList srv;
-                srv.request.object_name = instance;
-
-                if (!client_map_generator_.call(srv))
-                {
-                    ROS_ERROR_STREAM("Failed to call service " << srv_get_scene_name_);
-                    res.confirmation = false;
-                    return true;
-                }
-
-                if (!srv.response.obj_found)
-                {
-                    ROS_ERROR_STREAM("Object not found!");
-                    res.confirmation = false;
-                    return true;
-                }
-
-                ingredient_poses.instance_poses.push_back(srv.response.objects.pose[0]);
-            }
-
-            // Save the poses of the alternative instances
-            for (std::string instance : stringToVector(req.alternative_instances[i]))
-            {
-                cocktail_bot::GetSceneObjectList srv;
-                srv.request.object_name = instance;
-
-                if (!client_map_generator_.call(srv))
-                {
-                    ROS_ERROR_STREAM("Failed to call service " << srv_get_scene_name_);
-                    res.confirmation = false;
-                    return true;
-                }
-
-                if (!srv.response.obj_found)
-                {
-                    ROS_ERROR_STREAM("Object not found!");
-                    res.confirmation = false;
-                    return true;
-                }
-
-                ingredient_poses.alternative_poses.push_back(srv.response.objects.pose[0]);
-            }
-
-            ingredient_map[req.ingredients[i]] = ingredient_poses;
+            target_pose = tiago_pose;
+            state_ = State::MOVING_TO_OBJECT;
+            return true;
         }
 
-        state_ = State::FIND_INGREDIENT;
-        res.confirmation = true;
+        
+        // cocktail_bot::GetSceneObjectList srv;
+        // srv.request.object_name = instance;
+
+        // if (!client_map_generator_.call(srv))
+        // {
+        //     ROS_ERROR_STREAM("Failed to call service " << srv_get_scene_name_);
+        //     res.confirmation = false;
+        //     return true;
+        // }
+
+        // if (!srv.response.obj_found)
+        // {
+        //     ROS_ERROR_STREAM("Object not found!");
+        //     res.confirmation = false;
+        //     return true;
+        // }
+
+        // srv.response.objects.pose[0]
+
+        state_ = State::MOVING_TO_OBJECT;
         return true;
     }
 
@@ -277,13 +230,13 @@ private:
             controls_cmd = calculate_controls_to_target(poi_poses[poi_index]);
         }
 
-        if (state_ == State::MOVING_TO_TARGET) {
-            //controls_cmd = calculate_controls_to_target(target_pose);
+        if (state_ == State::MOVING_TO_OBJECT) {
+            controls_cmd = calculate_controls_to_target(target_pose);
         }
 
         // Publish controls
         pub_controls_.publish(controls_cmd);
-        ROS_INFO_STREAM("Published msg: " << controls_cmd);
+        ROS_DEBUG_STREAM("Published msg: " << controls_cmd);
 
         // Check if the robot has reached the target
         if (controls_cmd.linear.x == 0. && abs(controls_cmd.angular.z) < 0.002) {
@@ -294,16 +247,10 @@ private:
             }
             else
             {
-                ROS_INFO_STREAM("Reached object");
-                state_ = State::IDLE;
-                cocktail_bot::ArriveToObject srv;
-
+                state_ = State::AVAILABLE_TO_REQUEST;
+                cocktail_bot::ArrivedToObject srv;
                 srv.request.object_name = "";
-                srv.request.current_pose = tiago_pose;
-
-                client_arrive_to_object_.call(srv);
-                //Arrive to object
-
+                client_arrived_to_object_.call(srv);
             }
         }
     }

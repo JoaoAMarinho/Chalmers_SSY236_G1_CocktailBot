@@ -3,14 +3,15 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <queue>
 
 #include <rosprolog/rosprolog_client/PrologClient.h>
 
-#include <cocktail_bot/FindIngredients.h>
+#include <cocktail_bot/MoveToObject.h>
 #include <cocktail_bot/MakeCocktail.h>
 #include <cocktail_bot/UpdateKnowledge.h>
 #include <cocktail_bot/IsCloseToObject.h>
-#include <cocktail_bot/ArriveToObject.h>
+#include <cocktail_bot/ArrivedToObject.h>
 
 enum class State {
     AVAILABLE_TO_REQUEST,
@@ -27,8 +28,8 @@ class Reasoner
 private:
     PrologClient pl_; // Prolog client to connect to the Prolog server
 
-    std::string srv_find_ingredients_name_;      // Name of the service provided by the control node
-    ros::ServiceClient client_find_ingredients_; // Client to request the robot to find ingredients
+    std::string srv_move_to_object_name_;      // Name of the service provided by the control node
+    ros::ServiceClient client_move_to_object_; // Client to request the robot to find ingredients
 
     std::string srv_is_close_to_object_name_;      // Name of the service provided by map generator node
     ros::ServiceClient client_is_close_to_object_; // Client to ask robot is close to object
@@ -39,11 +40,22 @@ private:
     std::string srv_update_knowledge_name_;      // Name of the service to update the knowledge base
     ros::ServiceServer update_knowledge_srv_;    // Service to update the knowledge base
 
-    std::string srv_arrive_to_object_name_;   // Name of the service to receive arrive to object status
-    ros::ServiceServer arrive_to_object_srv_; // Service to receive arrive to object request
+    std::string srv_arrived_to_object_name_;   // Name of the service to receive arrive to object status
+    ros::ServiceServer arrived_to_object_srv_; // Service to receive arrive to object request
 
     State state_ = State::AVAILABLE_TO_REQUEST;  // Current state of the robot
-    std::map<std::string, IngredientInstances> ingredients_info; // Map to store the ingredients for the requested cocktail
+
+    struct CustomComparator {
+        bool operator()(const std::pair<std::string, IngredientInstances>& ing1,
+                        const std::pair<std::string, IngredientInstances>& ing2)
+        {
+            return ing1.second.instance_names.size() < ing2.second.instance_names.size();
+        }
+    };
+
+    std::priority_queue<std::pair<std::string, IngredientInstances>,
+                        std::vector<std::pair<std::string, IngredientInstances>>,
+                        CustomComparator> ingredients_info; // Queue to store the ingredients for the requested cocktail
     int ID_ = 0; // ID for the created instances
 
 public:
@@ -66,24 +78,24 @@ public:
         update_knowledge_srv_ = nh.advertiseService(srv_update_knowledge_name_, &Reasoner::srv_update_knowledge_callback, this);
 
         // Create service to receive arrive to object
-        srv_arrive_to_object_name_ = "arrive_to_object";
-        arrive_to_object_srv_ = nh.advertiseService(srv_arrive_to_object_name_, &Reasoner::srv_arrive_to_object_callback, this);
+        srv_arrived_to_object_name_ = "arrived_to_object";
+        arrived_to_object_srv_ = nh.advertiseService(srv_arrived_to_object_name_, &Reasoner::srv_arrived_to_object_callback, this);
 
         // Create client and wait until service is advertised
-        srv_find_ingredients_name_ = "find_ingredients";
-        client_find_ingredients_ = nh.serviceClient<cocktail_bot::FindIngredients>(srv_find_ingredients_name_);
+        srv_move_to_object_name_ = "move_to_object";
+        client_move_to_object_ = nh.serviceClient<cocktail_bot::MoveToObject>(srv_move_to_object_name_);
 
         // Wait for the service to be advertised
-        ROS_INFO("Waiting for service %s to be advertised...", srv_find_ingredients_name_.c_str());
-        bool service_found = ros::service::waitForService(srv_find_ingredients_name_, ros::Duration(30.0));
+        ROS_INFO("Waiting for service %s to be advertised...", srv_move_to_object_name_.c_str());
+        bool service_found = ros::service::waitForService(srv_move_to_object_name_, ros::Duration(30.0));
 
         if(!service_found)
         {
-            ROS_ERROR("Failed to call service %s", srv_find_ingredients_name_.c_str());
+            ROS_ERROR("Failed to call service %s", srv_move_to_object_name_.c_str());
             exit;
         }
 
-        ROS_INFO_STREAM("Connected to service: " << srv_find_ingredients_name_);
+        ROS_INFO_STREAM("Connected to service: " << srv_move_to_object_name_);
 
         // Create client and wait until service is advertised
         srv_is_close_to_object_name_ = "is_close_to_object";
@@ -188,7 +200,7 @@ private:
                 IngredientInstances ingredient_instances;
                 ingredient_instances.instance_names    = ingredient_names;
                 ingredient_instances.alternative_names = alternative_names;
-                ingredients_info[ingredient] = ingredient_instances;
+                ingredients_info.push({ ingredient, ingredient_instances});
             }
             break;
         }
@@ -207,36 +219,59 @@ private:
         // Call service to start making cocktail
         ROS_INFO_STREAM("Started making cocktail: " << req.cocktail_name);
 
-        for (int i = 0; i < ingredients_info["Ingredient"].instance_names.size(); i++)
+        cocktail_bot::MoveToObject srv;
+        srv.request.object_name = "START_COCKTAIL";
+
+        if (!client_move_to_object_.call(srv))
         {
-            std::string ingredient = ingredients_info["Ingredient"].instance_names[i];
-            std::string alternative = ingredients_info["Ingredient"].alternative_names[i];
-
-            cocktail_bot::FindIngredients srv;
-            srv.request.ingredients = ingredient;
-            srv.request.alternative = alternative;
-
-            if (!client_find_ingredients_.call(srv))
-            {
-                res.confirmation = false;
-                ROS_ERROR_STREAM("Failed to call service " << srv_find_ingredients_name_);
-                return false;
-            }
-
-            if (!srv.response.confirmation)
-            {
-                res.confirmation = false;
-                ROS_ERROR_STREAM("Unsuccessfull call to: " << srv_find_ingredients_name_);
-            }
+            res.confirmation = false;
+            ROS_ERROR_STREAM("Failed to call service " << srv_move_to_object_name_);
+            state_ = State::AVAILABLE_TO_REQUEST;
+            return false;
         }
 
         res.confirmation = true;
         return true;
     }
 
-    bool srv_arrive_to_object_callback(cocktail_bot::ArriveToObject::Request &req,
-                                       cocktail_bot::ArriveToObject::Response &res)
-    {   
+    bool srv_arrived_to_object_callback(cocktail_bot::ArrivedToObject::Request  &req,
+                                        cocktail_bot::ArrivedToObject::Response &res)
+    {
+        if (ingredients_info.empty())
+        {
+            ROS_WARN_STREAM("No more ingredients to find. Finished making cocktail!");
+            state_ = State::AVAILABLE_TO_REQUEST;
+            return true;
+        }
+
+        // Retrieve the first value from the queue
+        auto iter = ingredients_info.top();
+        std::string ingredient = iter.first;
+        IngredientInstances ingredient_instances = iter.second;
+
+        ROS_WARN_STREAM("Looking for Ingredient: " << ingredient);
+        // for (int i = 0; i < ingredients_info["Ingredient"].instance_names.size(); i++)
+        // {
+        //     std::string ingredient = ingredients_info["Ingredient"].instance_names[i];
+        //     std::string alternative = ingredients_info["Ingredient"].alternative_names[i];
+
+        //     cocktail_bot::MoveToObject srv;
+        //     srv.request.ingredients = ingredient;
+        //     srv.request.alternative = alternative;
+
+        //     if (!client_move_to_object_.call(srv))
+        //     {
+        //         res.confirmation = false;
+        //         ROS_ERROR_STREAM("Failed to call service " << srv_move_to_object_name_);
+        //         return false;
+        //     }
+
+        //     if (!srv.response.confirmation)
+        //     {
+        //         res.confirmation = false;
+        //         ROS_ERROR_STREAM("Unsuccessfull call to: " << srv_move_to_object_name_);
+        //     }
+        // }
         // TODO implement arrive to object
         // if(req.object_name == ""){
         //     res.confirmation = false;
@@ -269,7 +304,6 @@ private:
             
         // }
 
-        res.confirmation = true;
         return true;
     }
 
