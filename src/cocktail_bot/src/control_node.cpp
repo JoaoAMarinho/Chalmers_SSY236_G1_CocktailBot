@@ -8,6 +8,8 @@
 #include <cocktail_bot/MoveToObject.h>
 #include <cocktail_bot/ArrivedToObject.h>
 
+#define START_COCKTAIL "START_COCKTAIL"
+
 enum class State {
     IDLE,
     EXPLORING,
@@ -48,6 +50,7 @@ private:
 
     geometry_msgs::Pose tiago_pose;    // Pose of the robot
     geometry_msgs::Pose target_pose;   // Pose of the target
+    std::string target_name;           // Name of the target
 
     std::vector<geometry_msgs::Pose> poi_poses; // Poses of the points of interest
     std::size_t poi_index;                      // Index of the current point of interest
@@ -129,33 +132,32 @@ private:
         state_ = State::IDLE;
 
         // Check for cocktail start
-        if (req.object_name == "START_COCKTAIL")
+        if (req.object_name == START_COCKTAIL)
         {
             target_pose = tiago_pose;
+            target_name = "";
             state_ = State::MOVING_TO_OBJECT;
             return true;
         }
 
         
-        // cocktail_bot::GetSceneObjectList srv;
-        // srv.request.object_name = instance;
+        cocktail_bot::GetSceneObjectList srv;
+        srv.request.object_name = req.object_name;
 
-        // if (!client_map_generator_.call(srv))
-        // {
-        //     ROS_ERROR_STREAM("Failed to call service " << srv_get_scene_name_);
-        //     res.confirmation = false;
-        //     return true;
-        // }
+        if (!client_map_generator_.call(srv))
+        {
+            ROS_ERROR_STREAM("Failed to call service " << srv_get_scene_name_);
+            return false;
+        }
 
-        // if (!srv.response.obj_found)
-        // {
-        //     ROS_ERROR_STREAM("Object not found!");
-        //     res.confirmation = false;
-        //     return true;
-        // }
+        if (!srv.response.obj_found)
+        {
+            ROS_ERROR_STREAM("Object not found!");
+            return false;
+        }
 
-        // srv.response.objects.pose[0]
-
+        target_name = srv.request.object_name;
+        target_pose = srv.response.objects.pose[0];
         state_ = State::MOVING_TO_OBJECT;
         return true;
     }
@@ -249,7 +251,7 @@ private:
             {
                 state_ = State::AVAILABLE_TO_REQUEST;
                 cocktail_bot::ArrivedToObject srv;
-                srv.request.object_name = "";
+                srv.request.object_name = target_name;
                 client_arrived_to_object_.call(srv);
             }
         }

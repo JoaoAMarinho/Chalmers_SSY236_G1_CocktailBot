@@ -4,6 +4,7 @@
 #include <sstream>
 #include <fstream>
 #include <queue>
+#include <unistd.h> // For Unix-based systems
 
 #include <rosprolog/rosprolog_client/PrologClient.h>
 
@@ -13,9 +14,13 @@
 #include <cocktail_bot/IsCloseToObject.h>
 #include <cocktail_bot/ArrivedToObject.h>
 
+#define START_COCKTAIL "START_COCKTAIL"
+
 enum class State {
     AVAILABLE_TO_REQUEST,
-    MAKING_COCKTAIL
+    PREPARING_COCKTAIL,
+    LOOKING_FOR_INSTANCE,
+    LOOKING_FOR_ALTERNATIVE,
 };
 
 struct IngredientInstances {
@@ -158,7 +163,7 @@ private:
             return true;
         }
 
-        state_ = State::MAKING_COCKTAIL;
+        state_ = State::PREPARING_COCKTAIL;
 
         // Build query to get the instances for the requested cocktail
         std::stringstream ss;
@@ -190,12 +195,21 @@ private:
                 }
             }
 
+            // Build the queue with the ingredients and their instances
             for (int i = 0; i < query_result["Ingredients"].size(); i++)
             {
                 std::string ingredient = query_result["Ingredients"][i];
                 std::vector<std::string> ingredient_names  = stringToVector(query_result["Ingred_inst"][i]);
                 std::vector<std::string> alternative_names = stringToVector(query_result["Alt_inst"][i]);
 
+                // Check if there are any instances for the ingredient
+                if (ingredient_names.empty() && alternative_names.empty())
+                {
+                    res.confirmation = false;
+                    ROS_ERROR_STREAM("No possible instances to search for ingredient: " << ingredient);
+                    state_ = State::AVAILABLE_TO_REQUEST;
+                    return false;
+                }
                 // Add the ingredient to the map
                 IngredientInstances ingredient_instances;
                 ingredient_instances.instance_names    = ingredient_names;
@@ -220,7 +234,7 @@ private:
         ROS_INFO_STREAM("Started making cocktail: " << req.cocktail_name);
 
         cocktail_bot::MoveToObject srv;
-        srv.request.object_name = "START_COCKTAIL";
+        srv.request.object_name = START_COCKTAIL;
 
         if (!client_move_to_object_.call(srv))
         {
@@ -237,6 +251,26 @@ private:
     bool srv_arrived_to_object_callback(cocktail_bot::ArrivedToObject::Request  &req,
                                         cocktail_bot::ArrivedToObject::Response &res)
     {
+        // Retrieve the first value from the queue
+        auto iter = ingredients_info.top();
+        std::string ingredient = iter.first;
+        IngredientInstances ingredient_instances = iter.second;
+
+        if (state_ == State::LOOKING_FOR_INSTANCE)
+        {
+            ROS_INFO_STREAM("Picked up instance [" << ingredient_instances.instance_names[0]
+                            << "] of type [" << ingredient << "]");
+            ingredients_info.pop();
+        }
+        else if (state_ == State::LOOKING_FOR_ALTERNATIVE)
+        {
+            ROS_INFO_STREAM("Arrived at container: " << ingredient_instances.alternative_names[0]);
+            ingredients_info.pop();
+            sleep(2); // Pauses execution for 2 seconds
+            // If alternative of ingredient wait for 2s, call prolog, see if object is close and proceed
+                // In all cases if the prolog does not have the obj return an error    
+        }
+
         if (ingredients_info.empty())
         {
             ROS_WARN_STREAM("No more ingredients to find. Finished making cocktail!");
@@ -244,65 +278,46 @@ private:
             return true;
         }
 
-        // Retrieve the first value from the queue
-        auto iter = ingredients_info.top();
-        std::string ingredient = iter.first;
-        IngredientInstances ingredient_instances = iter.second;
+        iter = ingredients_info.top();
+        ingredient = iter.first;
+        ingredient_instances = iter.second;
 
-        ROS_WARN_STREAM("Looking for Ingredient: " << ingredient);
-        // for (int i = 0; i < ingredients_info["Ingredient"].instance_names.size(); i++)
-        // {
-        //     std::string ingredient = ingredients_info["Ingredient"].instance_names[i];
-        //     std::string alternative = ingredients_info["Ingredient"].alternative_names[i];
+        ROS_WARN_STREAM("Looking for ingredient: " << ingredient);
+        if (!ingredient_instances.instance_names.empty())
+        {
+            // TODO: Possibly send all instances and decide on the closest one 
+            std::string instance = ingredient_instances.instance_names[0];
 
-        //     cocktail_bot::MoveToObject srv;
-        //     srv.request.ingredients = ingredient;
-        //     srv.request.alternative = alternative;
+            ROS_INFO_STREAM("Moving to instance: " << instance);
+            cocktail_bot::MoveToObject srv;
+            srv.request.object_name = instance;
 
-        //     if (!client_move_to_object_.call(srv))
-        //     {
-        //         res.confirmation = false;
-        //         ROS_ERROR_STREAM("Failed to call service " << srv_move_to_object_name_);
-        //         return false;
-        //     }
+            if (!client_move_to_object_.call(srv))
+            {
+                ROS_ERROR_STREAM("Failed to call service " << srv_move_to_object_name_);
+                state_ = State::AVAILABLE_TO_REQUEST;
+                return false;
+            }
+        }
+        else
+        {
+            ROS_WARN_STREAM("No known instances for ingredient: " << ingredient 
+                            << ". Looking for alternatives.");
 
-        //     if (!srv.response.confirmation)
-        //     {
-        //         res.confirmation = false;
-        //         ROS_ERROR_STREAM("Unsuccessfull call to: " << srv_move_to_object_name_);
-        //     }
-        // }
-        // TODO implement arrive to object
-        // if(req.object_name == ""){
-        //     res.confirmation = false;
-        //     return false;
-        // }
-        // cocktail_bot::IsCloseToObject srv;
+            // TODO: Possibly send all instances and decide on the closest one
+            std::string alternative = ingredient_instances.alternative_names[0];
 
-        // // Check if it is instance being explored
+            ROS_INFO_STREAM("Moving to container: " << alternative);
+            cocktail_bot::MoveToObject srv;
+            srv.request.object_name = alternative;
 
-        // //TODO Alternative wait for 2s
-
-        // //TODO Call prolog to get object name
-
-        // // Check if close to object
-        // srv.request.object_name = "Table_1";
-        // srv.request.current_pose = req.current_pose;
-
-        // if (!client_is_close_to_object_.call(srv))
-        // {
-        //     res.confirmation = false;
-        //     ROS_ERROR_STREAM("Failed to call service " << srv_is_close_to_object_name_);
-        //     return false;
-        // }
-        
-        // // TODO handle request
-        // if(srv.response.isClose){
-            
-        // }
-        // else {
-            
-        // }
+            if (!client_move_to_object_.call(srv))
+            {
+                ROS_ERROR_STREAM("Failed to call service " << srv_move_to_object_name_);
+                state_ = State::AVAILABLE_TO_REQUEST;
+                return false;
+            }
+        }
 
         return true;
     }
