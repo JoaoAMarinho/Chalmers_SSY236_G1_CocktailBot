@@ -11,3 +11,5 @@ int8 alcohol
 ---
 # Name of the class
 string class_name
+# Request went ok
+bool confirmation

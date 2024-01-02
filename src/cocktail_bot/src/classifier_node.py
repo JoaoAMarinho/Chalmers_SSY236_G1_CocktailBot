@@ -60,7 +60,7 @@ class Classifier:
         data = pd.DataFrame([obj], columns=list(obj.keys()))
         pred = self.model.predict(data)
 
-        return ClassifyObjectResponse(pred[0])
+        return ClassifyObjectResponse(pred[0], True)
 
 
 if __name__ == "__main__":

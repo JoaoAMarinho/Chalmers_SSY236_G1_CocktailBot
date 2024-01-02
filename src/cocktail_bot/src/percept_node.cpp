@@ -100,7 +100,7 @@ public:
         // Create subscriber to receive gazebo model_states
         sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &Percept::sub_gazebo_callback, this);
 
-        bool DEBUG = true;
+        bool DEBUG = false;
         if (DEBUG) {
             // Create test instances
 
@@ -112,7 +112,7 @@ public:
             pose.orientation.y = 0.;
             pose.orientation.z = 0.;
 
-            update_node_knowledge("Table", pose);
+            update_node_knowledge("Apple", pose);
             //update_node_knowledge("glass", pose);
             //update_node_knowledge("glass", pose);
         }
@@ -240,7 +240,7 @@ private:
     bool update_node_knowledge(std::string obj_name, geometry_msgs::Pose obj_pose)
     {
         cocktail_bot::UpdateKnowledge srv_reasoning;
-        srv_reasoning.request.class_name = obj_name;
+        srv_reasoning.request.class_name = call_classify_object(obj_name);
 
         if (client_reasoning_.call(srv_reasoning))
         {
@@ -284,6 +284,29 @@ private:
         }
 
         return true;
+    }
+
+    std::string call_classify_object(std::string object_name){
+        auto it = map_objs_info_.find(object_name);
+        std::string classification_name = object_name;
+
+        if (it != map_objs_info_.end()) {
+            cocktail_bot::ClassifyObject object_info = it->second;
+            if(client_classifier_.call(object_info)){
+                ROS_INFO_STREAM("Called service [" << srv_classify_obj_name_ << "]\
+                                with object [" << object_name << "]");
+            }
+            else {
+                ROS_ERROR_STREAM("Failed to call service " << srv_classify_obj_name_);
+            }
+
+            if(object_info.response.confirmation){
+               classification_name = object_info.response.class_name;
+               ROS_INFO_STREAM("Object classified has [" << classification_name << "]");
+            }
+        }
+
+        return classification_name;
     }
 }; 
 
