@@ -100,7 +100,7 @@ public:
         // Create subscriber to receive gazebo model_states
         sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &Percept::sub_gazebo_callback, this);
 
-        bool DEBUG = true;
+        bool DEBUG = false;
         if (DEBUG) {
             // Create test instances
 

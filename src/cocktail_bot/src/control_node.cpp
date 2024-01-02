@@ -42,8 +42,8 @@ private:
     std::string srv_arrived_to_object_name_;      // Name of the service provided by the reasoning node
     ros::ServiceClient client_arrived_to_object_; // Client to inform that object robot arrive to object
     
-    //State state_ = State::EXPLORING;   // Current state of the robot
-    State state_ = State::AVAILABLE_TO_REQUEST;   // TODO: testing purposes, remove later
+    State state_ = State::EXPLORING;   // Current state of the robot
+    //State state_ = State::AVAILABLE_TO_REQUEST;   // TODO: testing purposes, remove later
 
     double ANGULAR_VEL = 1.1;          // Angular velocity of the robot
     double LINAR_VEL   = 0.1;          // Linear velocity of the robot
@@ -60,6 +60,9 @@ public:
     Controller(ros::NodeHandle& nh)
     {
         ROS_WARN_STREAM("Created Controller Node");
+
+        // Create points of interest
+        create_poi();
 
         // Create service to move the robot to an object
         srv_move_to_object_name_ = "move_to_object";
@@ -111,6 +114,48 @@ public:
     };
     
 private:
+
+    /**
+     * @brief Function to create the points of interest
+     */
+    void create_poi()
+    {
+        poi_index = 0;
+
+        geometry_msgs::Pose pose;
+        pose.position.x = 0.0;
+        pose.position.y = -3.0;
+        pose.position.z = 0.0;
+        pose.orientation.x = 0.0;
+        pose.orientation.y = -6.27;
+        pose.orientation.z = -0.86;
+        pose.orientation.w = 0.5;
+        poi_poses.push_back(pose);
+
+        pose.position.x = 3.24;
+        pose.position.y = 0.0;
+        pose.orientation.x = 2.38;
+        pose.orientation.y = 0.0;
+        pose.orientation.z = 0.488;
+        pose.orientation.w = 0.87;
+        poi_poses.push_back(pose);
+
+        pose.position.x = 0.35;
+        pose.position.y = 2.0;
+        pose.orientation.x = 0.0;
+        pose.orientation.y = 0.0;
+        pose.orientation.z = 1.0;
+        pose.orientation.w = 0.0;
+        poi_poses.push_back(pose);
+
+        pose.position.x = -1.0;
+        pose.position.y = -1.0;
+        pose.orientation.x = 1.0;
+        pose.orientation.y = 0.0;
+        pose.orientation.z = 0.0;
+        pose.orientation.w = 1.0;
+        poi_poses.push_back(pose);
+    }
 
     /**
      * @brief Callback function for the service that makes the robot look for ingredients
