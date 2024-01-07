@@ -312,7 +312,7 @@ private:
     std::string call_classify_object(std::string object_name)
     {
         auto it = map_objs_info_.find(object_name);
-        std::string classification_name = object_name;
+        std::string classification_name = get_object_class_name(object_name);
 
         if (it != map_objs_info_.end()) {
             cocktail_bot::ClassifyObject object_info = it->second;
@@ -331,6 +331,17 @@ private:
         }
 
         return classification_name;
+    }
+
+    std::string get_object_class_name(std::string name){
+        size_t lastPos = name.rfind('_');
+        std::string result = name; 
+
+        if (lastPos != std::string::npos) {
+            result = name.substr(0,lastPos);
+        }
+
+        return result;
     }
 }; 
 
