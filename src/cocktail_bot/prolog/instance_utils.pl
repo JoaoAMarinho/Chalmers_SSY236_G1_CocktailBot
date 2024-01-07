@@ -46,27 +46,22 @@ of the predicates
 %%%%%%%%%%%%%% Custom computables %%%%%%%%%%%%%%%%%%%%%%
 
 % This function will create an instance of a desired class
-% create_instance_from_class(+Class, +Instance_ID, ?Instance)
+% create_instance_from_class(+Class, +Instance)
 % The created instance will have the predicate/property rdf:type
 % to correctly inheritate the properties of its super-classes
 %
 % @param Class		represents the name of the class where the instance will be created.
 %					Class could be of two forms:
 %					Class='Orange'  <- make sure this class exist in the ontology "ssy236Ontology"
-% @param Instance_ID	is the new ID that the instance will have
 % @param Instance	asserted new instance
 
-create_instance_from_class(Class, Instance_ID, Instance) :-
+create_instance_from_class(Class, Instance) :-
 	% Check ID and class path
-	get_class_path(Class,Class_path),
-	
-	% Create the path of the new instance
-	atom_concat(Class_path,  '_', Class2),
-	atomic_concat(Class2, Instance_ID, Instance),
-	write('New instance created: '),write(Instance),nl,
+	get_class_path(Class, Class_path),
 
 	% assert/create the new instance
-	rdf_assert(Instance, rdf:type, Class_path).
+	rdf_assert(Instance, rdf:type, Class_path),
+	write('New instance created: '), write(Instance), nl.
 
 % This function will return the path of the class/instance given
 % get_class_path(+Class, ?Class_path)

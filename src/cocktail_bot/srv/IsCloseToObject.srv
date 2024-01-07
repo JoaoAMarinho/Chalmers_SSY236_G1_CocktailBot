@@ -1,5 +1,0 @@
-# Name of the object
-string object_name
----
-# Response to if the robot is close to the object
-bool isClose

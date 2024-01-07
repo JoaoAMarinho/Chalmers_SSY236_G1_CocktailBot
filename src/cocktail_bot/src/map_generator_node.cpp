@@ -80,8 +80,7 @@ private:
         //     ROS_DEBUG_STREAM(obj.first << ": " << obj.second);
         // }
 
-        res.confirmation = true;
-        return res.confirmation;
+        return true;
     }
 
     /**

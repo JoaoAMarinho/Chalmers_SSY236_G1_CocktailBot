@@ -6,6 +6,7 @@
 #include <gazebo_msgs/ModelStates.h>
 #include <cocktail_bot/GetSceneObjectList.h>
 #include <cocktail_bot/MoveToObject.h>
+#include <cocktail_bot/GetState.h>
 #include <cocktail_bot/ArrivedToObject.h>
 
 #define START_COCKTAIL "START_COCKTAIL"
@@ -35,15 +36,16 @@ private:
     std::string srv_move_to_object_name_;   // Name of the service to make the robot move to an object
     ros::ServiceServer move_to_object_srv_; // Service to make the robot move to an object
     
+    std::string srv_get_state_name_;   // Name of the service to inform the state of the robot
+    ros::ServiceServer get_state_srv_; // Service to inform the state of the robot
+    
     std::string srv_get_scene_name_;          // Name of the service provided by the map generator node
     ros::ServiceClient client_map_generator_; // Client to request information about objects in the scene
 
-    // TODO send arrive to object message
     std::string srv_arrived_to_object_name_;      // Name of the service provided by the reasoning node
     ros::ServiceClient client_arrived_to_object_; // Client to inform that object robot arrive to object
     
     State state_ = State::EXPLORING;   // Current state of the robot
-    //State state_ = State::AVAILABLE_TO_REQUEST;   // TODO: testing purposes, remove later
 
     double ANGULAR_VEL = 1.1;          // Angular velocity of the robot
     double LINAR_VEL   = 0.1;          // Linear velocity of the robot
@@ -67,6 +69,10 @@ public:
         // Create service to move the robot to an object
         srv_move_to_object_name_ = "move_to_object";
         move_to_object_srv_ = nh.advertiseService(srv_move_to_object_name_, &Controller::move_to_object_callback, this);
+
+        // Create service to inform robot state
+        srv_get_state_name_ = "get_state";
+        get_state_srv_ = nh.advertiseService(srv_get_state_name_, &Controller::get_state_callback, this);
 
         // Create subscriber to receive gazebo model_states
         subs_topic_name_="/gazebo/model_states";
@@ -155,6 +161,19 @@ private:
         pose.orientation.z = 0.0;
         pose.orientation.w = 1.0;
         poi_poses.push_back(pose);
+    }
+
+    /**
+     * @brief Callback function for the service that returns the state of the robot
+     *
+     * @param Request empty request
+     * @param Respose response from the service with the state of the robot
+     */
+    bool get_state_callback(cocktail_bot::GetState::Request  &req,
+                            cocktail_bot::GetState::Response &res)
+    {
+        res.state = (state_ == State::EXPLORING ? "EXPLORING" : "OTHER");
+        return true;
     }
 
     /**

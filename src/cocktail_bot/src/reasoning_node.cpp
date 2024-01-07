@@ -61,7 +61,6 @@ private:
     std::priority_queue<std::pair<std::string, IngredientInstances>,
                         std::vector<std::pair<std::string, IngredientInstances>>,
                         CustomComparator> ingredients_info; // Queue to store the ingredients for the requested cocktail
-    int ID_ = 0; // ID for the created instances
 
 public:
 
@@ -412,63 +411,24 @@ private:
         ROS_INFO_STREAM("Got new object of class: " << req.class_name);
 
         std::stringstream ss;
-        ss << "create_instance_from_class('" << req.class_name << "', " << ID_ << ", Instance)";
+        ss << "create_instance_from_class('" << req.class_name << "', " << req.instance_name << ")";
 
         std::string query = ss.str();
         ROS_INFO_STREAM("Query: " << query);
 
         PrologQuery bdgs = pl_.query(query);
-        std::string instance_name;
 
+        // Iterate over one solution
         for(PrologQuery::iterator it=bdgs.begin(); it != bdgs.end(); it++)
         {
             PrologBindings val = *it;
-
-            std::stringstream instanceVal;
-            instanceVal << val["Instance"];            
-            instance_name = instanceVal.str();
-
-            ROS_WARN_STREAM("new instance in knowledge base: " << instance_name);
+            ROS_WARN_STREAM("New instance in knowledge base: " << req.instance_name);
+            break;
         }
-
         bdgs.finish();
-        ID_++;
 
-        res.confirmation = true;
-        res.instance_name = instance_name;
-        return res.confirmation;
+        return true;
     }
-
-    // Example of how to assert queries to prolog
-    // TODO: remove both functions
-    // bool assertKnowledge(std::string className)
-    // {
-    //     std::string instanceName;
-
-    //     std::stringstream ss;
-    //     ss << "create_instance_from_class('" << className << "', " << ID_ << ", Instance)";
-        
-    //     std:string query= ss.str();
-
-    //     ROS_INFO_STREAM("query: "<<query);
-
-    //     PrologQuery bdgs = pl_.query(query);
-
-    //     for(PrologQuery::iterator it=bdgs.begin(); it != bdgs.end(); it++)
-    //     {
-    //         PrologBindings val = *it;
-    //         std::stringstream instanceVal;
-    //         instanceVal << val["Instance"];
-            
-    //         instanceName = instanceVal.str();
-    //         ROS_WARN_STREAM("new instance in knowledge base: " << instanceName);
-    //     }
-
-    //     bdgs.finish();
-    //     ID_++;
-        
-    //     return true;
-    // }
 };
 
 int main(int argc, char *argv[]) {

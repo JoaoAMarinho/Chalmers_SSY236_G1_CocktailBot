@@ -12,6 +12,7 @@
 #include <cocktail_bot/UpdateKnowledge.h>
 #include <cocktail_bot/UpdateObjectList.h>
 #include <cocktail_bot/ClassifyObject.h>
+#include <cocktail_bot/GetState.h>
 
 class Percept
 {
@@ -22,6 +23,9 @@ private:
 
     std::string srv_update_obj_name_;         // Name of the service provided by the map generator node
     ros::ServiceClient client_map_generator_; // Client to request updates to the seen objects in the map generator node
+
+    std::string srv_get_state_name_;          // Name of the service provided by the controller node
+    ros::ServiceClient client_get_state_;     // Client to request the current state of the robot
 
     std::string srv_update_knowledge_name_;   // Name of the service provided by the reasoning node
     ros::ServiceClient client_reasoning_;     // Client to request updates to the seen objects in the reasoning node
@@ -63,6 +67,22 @@ public:
         }
 
         ROS_INFO_STREAM("Connected to service: " << srv_update_obj_name_);
+
+        // Create client and wait until service is advertised
+        srv_get_state_name_ = "get_state";
+        client_get_state_ = nh.serviceClient<cocktail_bot::GetState>(srv_get_state_name_);
+
+        // Wait for the service to be advertised
+        ROS_INFO("Waiting for service %s to be advertised...", srv_get_state_name_.c_str());
+        service_found = ros::service::waitForService(srv_get_state_name_, ros::Duration(30.0));
+
+        if(!service_found)
+        {
+            ROS_ERROR("Failed to call service %s", srv_get_state_name_.c_str());
+            exit;
+        }
+
+        ROS_INFO_STREAM("Connected to service: " << srv_get_state_name_);
 
         // Create client and wait until service is advertised
         srv_update_knowledge_name_="update_knowledge";
@@ -177,7 +197,7 @@ private:
     void sub_gazebo_callback(const gazebo_msgs::ModelStates::ConstPtr& msg)
     {
         geometry_msgs::Pose tiago_pose;
-        return;
+
         // Search for tiago pose
         auto it = std::find(msg->name.begin(),  msg->name.end(), "tiago");
 
@@ -213,12 +233,22 @@ private:
             double dy    = tiago_pose.position.y - obj_pose.position.y;
             double dist  = sqrt(pow(dx, 2)+ pow(dy, 2));
 
-            // If the robot is close enought to the obj, then request the service
-            if (dist < 20)
+            // call get state service
+            cocktail_bot::GetState srv_get_state;
+            if (!client_get_state_.call(srv_get_state))
             {
-                // TODO: receive the class name from the classifier
-                if (!update_node_knowledge(obj_name, obj_pose)) return;
-                
+                ROS_ERROR_STREAM("Failed to call service " << srv_get_state_name_);
+                continue;
+            }
+
+            if (srv_get_state.response.state == "EXPLORING") {
+                if (dist > 10 || classifiable_object(obj_name))
+                    continue;
+                update_node_knowledge(obj_name, obj_pose);
+            }
+            else if (dist < 1)
+            {
+                update_node_knowledge(obj_name, obj_pose);
             }
         }
 
@@ -237,56 +267,50 @@ private:
      * @return true if the update was successful
      * @return false if the update failed
      */
-    bool update_node_knowledge(std::string obj_name, geometry_msgs::Pose obj_pose)
+    void update_node_knowledge(std::string obj_name, geometry_msgs::Pose obj_pose)
     {
         cocktail_bot::UpdateKnowledge srv_reasoning;
         srv_reasoning.request.class_name = call_classify_object(obj_name);
+        srv_reasoning.request.instance_name = obj_name;
 
         if (client_reasoning_.call(srv_reasoning))
         {
             ROS_INFO_STREAM("Called service [" << srv_update_knowledge_name_ << "]\
                                 with object [" << obj_name << "]");
-
-            if(!srv_reasoning.response.confirmation)
-            {
-                ROS_ERROR_STREAM("Failed to confirm call to service " << srv_update_obj_name_);
-                return false;
-            }
         }
         else
         {
             ROS_ERROR_STREAM("Failed to call service " << srv_update_obj_name_);
-            return false;
+            return;
         }
 
         cocktail_bot::UpdateObjectList srv_map_generator;
-        std::string instance_name = srv_reasoning.response.instance_name;
-
-        srv_map_generator.request.object_name = instance_name;
+        srv_map_generator.request.object_name = obj_name;
         srv_map_generator.request.object_pose = obj_pose;
 
         if (client_map_generator_.call(srv_map_generator))
         {
             ROS_INFO_STREAM("Called service [" << srv_update_obj_name_ << "]\
-                                with object [" << instance_name << "]");
+                                with object [" << obj_name << "]");
 
-            if(srv_map_generator.response.confirmation)
-            {
-                v_seen_obj_.push_back(instance_name);
-
-                ROS_INFO_STREAM("Object [" << instance_name << "] added to the seen list");
-            }
+            
+            v_seen_obj_.push_back(obj_name);
+            ROS_INFO_STREAM("Object [" << obj_name << "] added to the seen list");
         }
         else
         {
             ROS_ERROR_STREAM("Failed to call service " << srv_update_obj_name_);
-            return false;
         }
-
-        return true;
     }
 
-    std::string call_classify_object(std::string object_name){
+    bool classifiable_object(std::string object_name)
+    {
+        auto it = map_objs_info_.find(object_name);
+        return (it != map_objs_info_.end());
+    }
+
+    std::string call_classify_object(std::string object_name)
+    {
         auto it = map_objs_info_.find(object_name);
         std::string classification_name = object_name;
 
