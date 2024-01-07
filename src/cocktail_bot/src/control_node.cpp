@@ -296,7 +296,8 @@ private:
             {
                 state_ = State::AVAILABLE_TO_REQUEST;
                 cocktail_bot::ArrivedToObject srv;
-                srv.request.object_name = target_name;
+                srv.request.object_name  = target_name;
+                srv.request.current_pose = tiago_pose;
                 client_arrived_to_object_.call(srv);
             }
         }

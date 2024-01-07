@@ -1,3 +1,4 @@
 # Arrived object
 string object_name
+geometry_msgs/Pose current_pose
 ---

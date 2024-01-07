@@ -11,7 +11,7 @@
 #include <cocktail_bot/MoveToObject.h>
 #include <cocktail_bot/MakeCocktail.h>
 #include <cocktail_bot/UpdateKnowledge.h>
-#include <cocktail_bot/IsCloseToObject.h>
+#include <cocktail_bot/GetSceneObjectList.h>
 #include <cocktail_bot/ArrivedToObject.h>
 
 #define START_COCKTAIL "START_COCKTAIL"
@@ -36,8 +36,8 @@ private:
     std::string srv_move_to_object_name_;      // Name of the service provided by the control node
     ros::ServiceClient client_move_to_object_; // Client to request the robot to find ingredients
 
-    std::string srv_is_close_to_object_name_;      // Name of the service provided by map generator node
-    ros::ServiceClient client_is_close_to_object_; // Client to ask robot is close to object
+    std::string srv_get_scene_name_;             // Name of the service provided by map generator node
+    ros::ServiceClient client_get_scene_object_; // Client to ask for the pose of a target object(s) in the scene
 
     std::string srv_make_cocktail_name_;         // Name of the service to receive cocktail requests
     ros::ServiceServer make_cocktail_srv_;       // Service to receive cocktail requests
@@ -103,20 +103,20 @@ public:
         ROS_INFO_STREAM("Connected to service: " << srv_move_to_object_name_);
 
         // Create client and wait until service is advertised
-        srv_is_close_to_object_name_ = "is_close_to_object";
-        client_is_close_to_object_ = nh.serviceClient<cocktail_bot::IsCloseToObject>(srv_is_close_to_object_name_);
+        srv_get_scene_name_ = "get_scene_object_list";
+        client_get_scene_object_ = nh.serviceClient<cocktail_bot::GetSceneObjectList>(srv_get_scene_name_);
 
         // Wait for the service to be advertised
-        ROS_INFO("Waiting for service %s to be advertised...", srv_is_close_to_object_name_.c_str());
-        service_found = ros::service::waitForService(srv_is_close_to_object_name_, ros::Duration(30.0));
+        ROS_INFO("Waiting for service %s to be advertised...", srv_get_scene_name_.c_str());
+        service_found = ros::service::waitForService(srv_get_scene_name_, ros::Duration(30.0));
 
         if (!service_found)
         {
-            ROS_ERROR("Failed to call service %s", srv_is_close_to_object_name_.c_str());
+            ROS_ERROR("Failed to call service %s", srv_get_scene_name_.c_str());
             exit;
         }
 
-        ROS_INFO_STREAM("Connected to service: " << srv_is_close_to_object_name_);
+        ROS_INFO_STREAM("Connected to service: " << srv_get_scene_name_);
     };
 
     ~Reasoner()
@@ -265,10 +265,79 @@ private:
         else if (state_ == State::LOOKING_FOR_ALTERNATIVE)
         {
             ROS_INFO_STREAM("Arrived at container: " << ingredient_instances.alternative_names[0]);
-            ingredients_info.pop();
             sleep(2); // Pauses execution for 2 seconds
-            // If alternative of ingredient wait for 2s, call prolog, see if object is close and proceed
-                // In all cases if the prolog does not have the obj return an error    
+
+            // Build query to get the instances for the requested cocktail
+            std::stringstream ss;
+            ss << "get_instances_for_class('" << ingredient << "', Ingred_inst, _)";
+            std::string query = ss.str();
+            ROS_INFO_STREAM("Query: " << query);
+
+            PrologQuery bdgs = pl_.query(query);
+            std::vector<std::string> new_ingredient_instances;
+            
+            // Iterate over one solution
+            for(PrologQuery::iterator prolog_it = bdgs.begin(); prolog_it != bdgs.end(); prolog_it++)
+            {
+                PrologBindings val = *prolog_it;
+
+                // Find new ingredients
+                PrologValue value = val["Ingred_inst"];
+                new_ingredient_instances = stringToVector(value.toString());
+                break;
+            }
+            bdgs.finish();
+
+            if (new_ingredient_instances.empty())
+            {
+                ROS_ERROR_STREAM("Could not find new instances of type [" << ingredient << "]");
+                while (!ingredients_info.empty())
+                    ingredients_info.pop();
+                state_ = State::AVAILABLE_TO_REQUEST;
+                return false;
+            }
+
+            // Get the pose of the new ingredient instance
+            cocktail_bot::GetSceneObjectList srv;
+            srv.request.object_name = new_ingredient_instances[0];
+            if (!client_get_scene_object_.call(srv))
+            {
+                ROS_ERROR_STREAM("Failed to call service " << srv_get_scene_name_);
+                while (!ingredients_info.empty())
+                    ingredients_info.pop();
+                state_ = State::AVAILABLE_TO_REQUEST;
+                return false;
+            }
+            else if (!srv.response.obj_found)
+            {
+                ROS_ERROR_STREAM(srv.response.message);
+                while (!ingredients_info.empty())
+                    ingredients_info.pop();
+                state_ = State::AVAILABLE_TO_REQUEST;
+                return false;
+            }
+
+            // See if robot is close enough to the new ingredient instance
+            geometry_msgs::Pose current_pose = req.current_pose;
+            geometry_msgs::Pose obj_pose = srv.response.objects.pose[0];
+
+            double distance = sqrt(pow(current_pose.position.x - obj_pose.position.x, 2) +
+                                   pow(current_pose.position.y - obj_pose.position.y, 2) );
+            if (distance > 0.5)
+            {
+                ROS_ERROR_STREAM("Robot is not close enough to the new instance of type [" << ingredient << "]");
+                while (!ingredients_info.empty())
+                    ingredients_info.pop();
+                state_ = State::AVAILABLE_TO_REQUEST;
+                return false;
+            }
+            else
+            {
+                ROS_INFO_STREAM("Picked up instance [" << new_ingredient_instances[0]
+                                << "] of type [" << ingredient << "]");
+                ingredients_info.pop();
+            }
+
         }
 
         if (ingredients_info.empty())
@@ -289,12 +358,16 @@ private:
             std::string instance = ingredient_instances.instance_names[0];
 
             ROS_INFO_STREAM("Moving to instance: " << instance);
+            state_ = State::LOOKING_FOR_INSTANCE;
+
             cocktail_bot::MoveToObject srv;
             srv.request.object_name = instance;
 
             if (!client_move_to_object_.call(srv))
             {
                 ROS_ERROR_STREAM("Failed to call service " << srv_move_to_object_name_);
+                while (!ingredients_info.empty())
+                    ingredients_info.pop();
                 state_ = State::AVAILABLE_TO_REQUEST;
                 return false;
             }
@@ -308,12 +381,16 @@ private:
             std::string alternative = ingredient_instances.alternative_names[0];
 
             ROS_INFO_STREAM("Moving to container: " << alternative);
+            state_ = State::LOOKING_FOR_ALTERNATIVE;
+
             cocktail_bot::MoveToObject srv;
             srv.request.object_name = alternative;
 
             if (!client_move_to_object_.call(srv))
             {
                 ROS_ERROR_STREAM("Failed to call service " << srv_move_to_object_name_);
+                while (!ingredients_info.empty())
+                    ingredients_info.pop();
                 state_ = State::AVAILABLE_TO_REQUEST;
                 return false;
             }
