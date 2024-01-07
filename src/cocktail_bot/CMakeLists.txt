@@ -70,7 +70,6 @@ add_service_files(
   MakeCocktail.srv
   ClassifyObject.srv
   ArrivedToObject.srv
-  GetState.srv
 )
 
 ## Generate actions in the 'action' folder

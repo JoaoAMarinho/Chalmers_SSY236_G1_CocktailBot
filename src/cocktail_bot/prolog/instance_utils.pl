@@ -32,7 +32,7 @@ of the predicates
 
 :- module(instance_utils,
     [
-	create_instance_from_class/3,
+	create_instance_from_class/2,
 	get_class_path/2,
 	get_class/1,
 	get_instances_for_class/3
@@ -110,11 +110,11 @@ get_instances_for_class(Class, Class_inst, Alt_inst) :-
 	rdf_has(Class_path, rdf:type, owl:'Class'),
 	(	setof(X, rdfs_individual_of(X, Class_path), Individuals) -> Class_inst = Individuals
 	;	Class_inst = []),
-	write(Class), write(' instances: '), write(Class_inst), nl,
+	% write(Class), write(' instances: '), write(Class_inst), nl,
 	get_storage_for_class(Class_path, Storage),
 	(	setof(X, rdfs_individual_of(X, Storage), Storages) -> Alt_inst = Storages
-	;	Alt_inst = []),
-	write('Storage instances: '), write(Alt_inst), nl, nl.
+	;	Alt_inst = []).
+	% write('Storage instances: '), write(Alt_inst), nl, nl.
 
 
 % This function will return the storage class for a given item class

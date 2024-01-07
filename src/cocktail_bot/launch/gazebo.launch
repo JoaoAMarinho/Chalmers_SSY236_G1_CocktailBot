@@ -8,7 +8,7 @@
   <arg name="gzclient" default="true"/>
   <arg name="recording" default="false"/>
   <arg name="world" default="kitchen_chalmers"/>
-  <arg name="tuck_arm" default="true"/>	  
+  <arg name="tuck_arm" default="true"/>
   
   
   <env name="LC_NUMERIC" value="C" />

@@ -68,8 +68,8 @@ private:
     bool srv_update_callback(cocktail_bot::UpdateObjectList::Request  &req,
                              cocktail_bot::UpdateObjectList::Response &res)
     {
-        ROS_INFO_STREAM("Got new object: " << req.object_name);
-        ROS_INFO_STREAM("Object Pose: " << req.object_pose);
+        ROS_DEBUG_STREAM("Got new object: " << req.object_name);
+        ROS_DEBUG_STREAM("Object Pose: " << req.object_pose);
 
         //Push the information that is obtained from the client via the request variables
         map_objs_[req.object_name] = req.object_pose;
@@ -109,7 +109,7 @@ private:
         // If the requested obj as been seen, then send the pose
         if (map_objs_.find(req.object_name) != map_objs_.end())
         {
-            ROS_INFO_STREAM("The requested object " << req.object_name << " is in the list" << std::endl);
+            ROS_DEBUG_STREAM("The requested object " << req.object_name << " is in the list" << std::endl);
             res.objects.name.push_back(req.object_name);
             res.objects.pose.push_back(map_objs_[req.object_name]);
             res.obj_found = true;
