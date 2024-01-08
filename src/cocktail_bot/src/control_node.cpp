@@ -7,6 +7,7 @@
 #include <cocktail_bot/GetSceneObjectList.h>
 #include <cocktail_bot/MoveToObject.h>
 #include <cocktail_bot/ArrivedToObject.h>
+#include "std_msgs/String.h"
 
 #define START_COCKTAIL "START_COCKTAIL"
 
@@ -14,6 +15,7 @@ enum class State {
     IDLE,
     EXPLORING,
     AVAILABLE_TO_REQUEST,
+    STARTING_COCKTAIL,
     MOVING_TO_OBJECT
 };
 
@@ -31,6 +33,10 @@ private:
 
     ros::Publisher pub_controls_;      // Publisher gazebo key_vel
     ros::Timer controls_timer_;        // Timer to publish control actions
+
+    std::string topic_get_state_name_; // Name of the topic to get the state of the robot
+    ros::Publisher pub_state_;         // Publisher to inform the state of the robot
+    ros::Timer state_timer_;           // Timer to publish robot state
     
     std::string srv_move_to_object_name_;   // Name of the service to make the robot move to an object
     ros::ServiceServer move_to_object_srv_; // Service to make the robot move to an object
@@ -38,12 +44,10 @@ private:
     std::string srv_get_scene_name_;          // Name of the service provided by the map generator node
     ros::ServiceClient client_map_generator_; // Client to request information about objects in the scene
 
-    // TODO send arrive to object message
     std::string srv_arrived_to_object_name_;      // Name of the service provided by the reasoning node
     ros::ServiceClient client_arrived_to_object_; // Client to inform that object robot arrive to object
     
     State state_ = State::EXPLORING;   // Current state of the robot
-    //State state_ = State::AVAILABLE_TO_REQUEST;   // TODO: testing purposes, remove later
 
     double ANGULAR_VEL = 1.1;          // Angular velocity of the robot
     double LINAR_VEL   = 0.1;          // Linear velocity of the robot
@@ -63,6 +67,11 @@ public:
 
         // Create points of interest
         create_poi();
+
+        // Create publisher to send controls to gazebo
+        topic_get_state_name_ = "/get_state";
+        pub_state_   = nh.advertise<std_msgs::String>(topic_get_state_name_, 100);
+        state_timer_ = nh.createTimer(ros::Duration(0.1), &Controller::state_timer_callback, this);
 
         // Create service to move the robot to an object
         srv_move_to_object_name_ = "move_to_object";
@@ -127,33 +136,27 @@ private:
         pose.position.y = -3.0;
         pose.position.z = 0.0;
         pose.orientation.x = 0.0;
-        pose.orientation.y = -6.27;
-        pose.orientation.z = -0.86;
-        pose.orientation.w = 0.5;
+        pose.orientation.y = M_PI;
+        pose.orientation.z = 1.0;
+        pose.orientation.w = 1.0;
         poi_poses.push_back(pose);
 
-        pose.position.x = 3.24;
-        pose.position.y = 0.0;
-        pose.orientation.x = 2.38;
-        pose.orientation.y = 0.0;
-        pose.orientation.z = 0.488;
-        pose.orientation.w = 0.87;
-        poi_poses.push_back(pose);
-
-        pose.position.x = 0.35;
-        pose.position.y = 2.0;
+        pose.position.x = 4.0;
+        pose.position.y = -3.0;
         pose.orientation.x = 0.0;
         pose.orientation.y = 0.0;
-        pose.orientation.z = 1.0;
-        pose.orientation.w = 0.0;
         poi_poses.push_back(pose);
 
-        pose.position.x = -1.0;
-        pose.position.y = -1.0;
-        pose.orientation.x = 1.0;
+        pose.position.x = 2.0;
+        pose.position.y = 3.0;
+        pose.orientation.x = 0.0;
         pose.orientation.y = 0.0;
-        pose.orientation.z = 0.0;
-        pose.orientation.w = 1.0;
+        poi_poses.push_back(pose);
+
+        pose.position.x = -0.5;
+        pose.position.y = -0.5;
+        pose.orientation.x = 0.0;
+        pose.orientation.y = 0.0;
         poi_poses.push_back(pose);
     }
 
@@ -179,13 +182,10 @@ private:
         // Check for cocktail start
         if (req.object_name == START_COCKTAIL)
         {
-            target_pose = tiago_pose;
-            target_name = "";
-            state_ = State::MOVING_TO_OBJECT;
+            state_ = State::STARTING_COCKTAIL;
             return true;
         }
 
-        
         cocktail_bot::GetSceneObjectList srv;
         srv.request.object_name = req.object_name;
 
@@ -254,6 +254,14 @@ private:
         return controls_cmd;
     }
 
+    void state_timer_callback(const ros::TimerEvent& e)
+    {
+        std::string state = (state_ == State::EXPLORING ? "EXPLORING" : "OTHER");
+        std_msgs::String msg;
+        msg.data = state;
+        pub_state_.publish(msg);
+    }
+
     /**
      * @brief Callback function to publish the controls to gazebo
      *
@@ -264,36 +272,45 @@ private:
         // Check if the robot is trying to reach a target
         if (state_ == State::IDLE ||
             state_ == State::AVAILABLE_TO_REQUEST) return;
+        
+        if (state_ == State::STARTING_COCKTAIL)
+        {
+            state_ = State::AVAILABLE_TO_REQUEST;
+            cocktail_bot::ArrivedToObject srv;
+            srv.request.object_name  = "";
+            srv.request.current_pose = tiago_pose;
+            client_arrived_to_object_.call(srv);
+            return;
+        }
 
         geometry_msgs::Twist controls_cmd;
 
         if (state_ == State::EXPLORING) {
             if (poi_index == poi_poses.size()) {
-                ROS_INFO_STREAM("Finished exploring");
+                ROS_WARN_STREAM("Finished exploring");
                 state_ = State::AVAILABLE_TO_REQUEST;
                 return;
             }
 
             controls_cmd = calculate_controls_to_target(poi_poses[poi_index]);
-        }
+            pub_controls_.publish(controls_cmd);
 
-        if (state_ == State::MOVING_TO_OBJECT) {
-            controls_cmd = calculate_controls_to_target(target_pose);
-        }
-
-        // Publish controls
-        pub_controls_.publish(controls_cmd);
-        ROS_DEBUG_STREAM("Published msg: " << controls_cmd);
-
-        // Check if the robot has reached the target
-        if (controls_cmd.linear.x == 0. && abs(controls_cmd.angular.z) < 0.002) {
-            if (state_ == State::EXPLORING)
+            // Check if the robot has reached the point of interest
+            if (controls_cmd.linear.x == 0. && abs(controls_cmd.angular.z) < 0.02)
             {
                 ROS_INFO_STREAM("Reached point of interest");
                 poi_index++;
             }
-            else
-            {
+        }
+        else if (state_ == State::MOVING_TO_OBJECT) {
+            controls_cmd = calculate_controls_to_target(target_pose);
+            pub_controls_.publish(controls_cmd);
+
+            double distance = std::sqrt(std::pow(tiago_pose.position.x - target_pose.position.x, 2) +
+                                        std::pow(tiago_pose.position.y - target_pose.position.y, 2));
+            
+            // Check if distance to target is less than 1
+            if (distance < 1.) {
                 state_ = State::AVAILABLE_TO_REQUEST;
                 cocktail_bot::ArrivedToObject srv;
                 srv.request.object_name  = target_name;
@@ -332,7 +349,8 @@ int main(int argc, char** argv)
 
     Controller myController(nh);
 
-    ros::spin();
+    ros::MultiThreadedSpinner spinner(4);
+    spinner.spin();
 
     return 0;
 }

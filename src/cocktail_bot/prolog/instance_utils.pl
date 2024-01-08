@@ -32,7 +32,7 @@ of the predicates
 
 :- module(instance_utils,
     [
-	create_instance_from_class/3,
+	create_instance_from_class/2,
 	get_class_path/2,
 	get_class/1,
 	get_instances_for_class/3
@@ -46,27 +46,22 @@ of the predicates
 %%%%%%%%%%%%%% Custom computables %%%%%%%%%%%%%%%%%%%%%%
 
 % This function will create an instance of a desired class
-% create_instance_from_class(+Class, +Instance_ID, ?Instance)
+% create_instance_from_class(+Class, +Instance)
 % The created instance will have the predicate/property rdf:type
 % to correctly inheritate the properties of its super-classes
 %
 % @param Class		represents the name of the class where the instance will be created.
 %					Class could be of two forms:
 %					Class='Orange'  <- make sure this class exist in the ontology "ssy236Ontology"
-% @param Instance_ID	is the new ID that the instance will have
 % @param Instance	asserted new instance
 
-create_instance_from_class(Class, Instance_ID, Instance) :-
+create_instance_from_class(Class, Instance) :-
 	% Check ID and class path
-	get_class_path(Class,Class_path),
-	
-	% Create the path of the new instance
-	atom_concat(Class_path,  '_', Class2),
-	atomic_concat(Class2, Instance_ID, Instance),
-	write('New instance created: '),write(Instance),nl,
+	get_class_path(Class, Class_path),
 
 	% assert/create the new instance
-	rdf_assert(Instance, rdf:type, Class_path).
+	rdf_assert(Instance, rdf:type, Class_path),
+	write('New instance created: '), write(Instance), nl.
 
 % This function will return the path of the class/instance given
 % get_class_path(+Class, ?Class_path)
@@ -115,11 +110,11 @@ get_instances_for_class(Class, Class_inst, Alt_inst) :-
 	rdf_has(Class_path, rdf:type, owl:'Class'),
 	(	setof(X, rdfs_individual_of(X, Class_path), Individuals) -> Class_inst = Individuals
 	;	Class_inst = []),
-	write(Class), write(' instances: '), write(Class_inst), nl,
+	% write(Class), write(' instances: '), write(Class_inst), nl,
 	get_storage_for_class(Class_path, Storage),
 	(	setof(X, rdfs_individual_of(X, Storage), Storages) -> Alt_inst = Storages
-	;	Alt_inst = []),
-	write('Storage instances: '), write(Alt_inst), nl, nl.
+	;	Alt_inst = []).
+	% write('Storage instances: '), write(Alt_inst), nl, nl.
 
 
 % This function will return the storage class for a given item class
