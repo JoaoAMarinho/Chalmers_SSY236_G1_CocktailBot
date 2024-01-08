@@ -81,7 +81,6 @@
         <rdfs:subPropertyOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#abstractProperties"/>
         <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Fridge"/>
         <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cold"/>
-        <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Drink"/>
     </owl:ObjectProperty>
     
 
@@ -102,6 +101,16 @@
         <rdfs:subPropertyOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#spatialProperties"/>
         <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#MovementEvent"/>
         <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Environment"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#drinkStorage -->
+
+    <owl:ObjectProperty rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#drinkStorage">
+        <rdfs:subPropertyOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#abstractProperties"/>
+        <rdfs:domain rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#FoodShelf"/>
+        <rdfs:range rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Drink"/>
     </owl:ObjectProperty>
     
 
