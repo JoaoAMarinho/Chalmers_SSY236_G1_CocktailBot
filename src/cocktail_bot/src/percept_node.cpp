@@ -111,23 +111,6 @@ public:
 
         // Create subscriber to receive gazebo model_states
         sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &Percept::sub_gazebo_callback, this);
-
-        bool DEBUG = false;
-        if (DEBUG) {
-            // Create test instances
-
-            geometry_msgs::Pose pose;
-            pose.position.x = 10.;
-            pose.position.y = 10.;
-            pose.position.z = 2.;
-            pose.orientation.x = 0.;
-            pose.orientation.y = 0.;
-            pose.orientation.z = 0.;
-
-            update_node_knowledge("Apple", pose);
-            //update_node_knowledge("glass", pose);
-            //update_node_knowledge("glass", pose);
-        }
     };
 
     ~Percept()
@@ -233,24 +216,18 @@ private:
             double dy    = tiago_pose.position.y - obj_pose.position.y;
             double dist  = sqrt(pow(dx, 2)+ pow(dy, 2));
 
-            if (dist > 3) continue;
+            if (dist > 2.3) continue;
 
             if (state_ == "EXPLORING") {
                 if (classifiable_object(obj_name))
                     continue;
                 update_node_knowledge(obj_name, obj_pose);
             }
-            else if (dist < 1)
+            else if (dist < 1.5)
             {
                 update_node_knowledge(obj_name, obj_pose);
             }
         }
-
-    // Debug print for the seen object list
-    // for (size_t i = 2; i < v_seen_obj_.size(); i++)
-    // {
-    //     ROS_INFO_STREAM("[" << i << "]: " << v_seen_obj_.at(i));
-    // } 
     }
 
     /**

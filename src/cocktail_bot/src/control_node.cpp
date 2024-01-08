@@ -11,7 +11,7 @@
 
 #define START_COCKTAIL "START_COCKTAIL"
 #define BASE "BASE"
-#define LINAR_VEL   0.4 // Linear velocity of the robot
+#define LINAR_VEL   10. // Linear velocity of the robot
 #define ANGULAR_VEL 1.3 // Angular velocity of the robot
 
 enum class State {
@@ -149,19 +149,20 @@ private:
         pose.orientation.y = 0.0;
         poi_poses.push_back(pose);
 
-        pose.position.x = 2.0;
-        pose.position.y = 3.0;
+        pose.position.x = 1.;
+        pose.position.y = 4.7;
         pose.orientation.x = 0.0;
         pose.orientation.y = 0.0;
         poi_poses.push_back(pose);
 
-        pose.position.x = -0.5;
-        pose.position.y = -0.5;
-        pose.orientation.x = M_PI*2;
-        pose.orientation.y = M_PI*2;
+        pose.position.x = 0.;
+        pose.position.y = 0.;
+        pose.orientation.x = 0.0;
+        pose.orientation.y = -5.6;
+        pose.orientation.w = -1.0;
         poi_poses.push_back(pose);
 
-        initial_pose = poi_poses[3];
+        initial_pose = poi_poses[poi_poses.size()-1];
     }
 
     /**
@@ -260,12 +261,17 @@ private:
         controls_cmd.angular.z = ANGULAR_VEL * theta;
         
         // Regulate speed according to rotation command
-        controls_cmd.linear.x = controls_cmd.angular.z > 0.8 ? LINAR_VEL-0.2 : LINAR_VEL;
+        controls_cmd.linear.x = controls_cmd.angular.z > 0.8 ? 0.2 : LINAR_VEL;
         controls_cmd.linear.x *= d;
 
         return controls_cmd;
     }
 
+    /**
+     * @brief Callback function to publish the state of the robot
+     *
+     * @param e timer event
+     */
     void state_timer_callback(const ros::TimerEvent& e)
     {
         std::string state = (state_ == State::EXPLORING ? "EXPLORING" : "OTHER");
@@ -323,7 +329,7 @@ private:
                                         std::pow(tiago_pose.position.y - target_pose.position.y, 2));
             
             // Check if distance to target is less than 1
-            if (distance < 1.) {
+            if (distance < 1.3) {
                 state_ = State::AVAILABLE_TO_REQUEST;
                 cocktail_bot::ArrivedToObject srv;
                 srv.request.object_name  = target_name;

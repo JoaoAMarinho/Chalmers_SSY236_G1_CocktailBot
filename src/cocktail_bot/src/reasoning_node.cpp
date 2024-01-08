@@ -50,6 +50,7 @@ private:
     ros::ServiceServer arrived_to_object_srv_; // Service to receive arrive to object request
 
     State state_ = State::AVAILABLE_TO_REQUEST;  // Current state of the robot
+    int alternative_counter_ = 0;                // Counter to keep track of the number of alternatives
 
     struct CustomComparator {
         bool operator()(const std::pair<std::string, IngredientInstances>& ing1,
@@ -214,7 +215,7 @@ private:
                 IngredientInstances ingredient_instances;
                 ingredient_instances.instance_names    = ingredient_names;
                 ingredient_instances.alternative_names = alternative_names;
-                ingredients_info.push({ ingredient, ingredient_instances});
+                ingredients_info.push({ ingredient, ingredient_instances });
             }
             break;
         }
@@ -255,6 +256,7 @@ private:
         {
             ROS_WARN_STREAM("Arrived to base, cocktail finished!");
             state_ = State::AVAILABLE_TO_REQUEST;
+            alternative_counter_ = 0;
             return true;
         }
 
@@ -263,22 +265,23 @@ private:
         std::string ingredient = iter.first;
         IngredientInstances ingredient_instances = iter.second;
 
+        // Arrived to instance
         if (state_ == State::LOOKING_FOR_INSTANCE)
         {
             ROS_WARN_STREAM("Picked up instance [" << ingredient_instances.instance_names[0]
                             << "] of type [" << ingredient << "]");
+            alternative_counter_ = 0;
             ingredients_info.pop();
         }
-        else if (state_ == State::LOOKING_FOR_ALTERNATIVE)
+        else if (state_ == State::LOOKING_FOR_ALTERNATIVE) // Arrived to alternative
         {
-            ROS_INFO_STREAM("Arrived at container: " << ingredient_instances.alternative_names[0]);
-            sleep(2); // Pauses execution for 2 seconds
+            ROS_WARN_STREAM("Arrived at container: " << ingredient_instances.alternative_names[alternative_counter_]);
+            ros::Duration(2.0).sleep(); // Sleep for 2 seconds
 
             // Build query to get the instances for the requested cocktail
             std::stringstream ss;
             ss << "get_instances_for_class('" << ingredient << "', Ingred_inst, _)";
             std::string query = ss.str();
-            ROS_DEBUG_STREAM("Query: " << query);
 
             PrologQuery bdgs = pl_.query(query);
             std::vector<std::string> new_ingredient_instances;
@@ -297,11 +300,36 @@ private:
 
             if (new_ingredient_instances.empty())
             {
-                ROS_ERROR_STREAM("Could not find new instances of type [" << ingredient << "]");
-                while (!ingredients_info.empty())
-                    ingredients_info.pop();
-                state_ = State::AVAILABLE_TO_REQUEST;
-                return false;
+                alternative_counter_++;
+                if (alternative_counter_ == ingredient_instances.alternative_names.size())
+                {
+                    ROS_ERROR_STREAM("No more containers to search for instances of type [" << ingredient << "].");
+                    while (!ingredients_info.empty())
+                        ingredients_info.pop();
+                    alternative_counter_ = 0;
+                    state_ = State::AVAILABLE_TO_REQUEST;
+                    return false;
+                }
+
+                std::string alternative = ingredient_instances.alternative_names[alternative_counter_];
+                ROS_WARN_STREAM("Could not find new instances of type [" << ingredient << "].\
+                                Looking for new container: " << alternative);
+                
+                state_ = State::LOOKING_FOR_ALTERNATIVE;
+                
+                cocktail_bot::MoveToObject srv;
+                srv.request.object_name = alternative;
+
+                if (!client_move_to_object_.call(srv))
+                {
+                    ROS_ERROR_STREAM("Failed to call service " << srv_move_to_object_name_);
+                    while (!ingredients_info.empty())
+                        ingredients_info.pop();
+                    alternative_counter_ = 0;
+                    state_ = State::AVAILABLE_TO_REQUEST;
+                    return false;
+                }
+                return true;
             }
 
             // Get the pose of the new ingredient instance
@@ -312,6 +340,7 @@ private:
                 ROS_ERROR_STREAM("Failed to call service " << srv_get_scene_name_);
                 while (!ingredients_info.empty())
                     ingredients_info.pop();
+                alternative_counter_ = 0;
                 state_ = State::AVAILABLE_TO_REQUEST;
                 return false;
             }
@@ -320,6 +349,7 @@ private:
                 ROS_ERROR_STREAM(srv.response.message);
                 while (!ingredients_info.empty())
                     ingredients_info.pop();
+                alternative_counter_ = 0;
                 state_ = State::AVAILABLE_TO_REQUEST;
                 return false;
             }
@@ -330,11 +360,12 @@ private:
 
             double distance = sqrt(pow(current_pose.position.x - obj_pose.position.x, 2) +
                                    pow(current_pose.position.y - obj_pose.position.y, 2) );
-            if (distance > 0.5)
+            if (distance > 1.5)
             {
                 ROS_ERROR_STREAM("Robot is not close enough to the new instance of type [" << ingredient << "]");
                 while (!ingredients_info.empty())
                     ingredients_info.pop();
+                alternative_counter_ = 0;
                 state_ = State::AVAILABLE_TO_REQUEST;
                 return false;
             }
@@ -342,6 +373,7 @@ private:
             {
                 ROS_WARN_STREAM("Picked up instance [" << new_ingredient_instances[0]
                                 << "] of type [" << ingredient << "]");
+                alternative_counter_ = 0;
                 ingredients_info.pop();
             }
 
@@ -359,6 +391,7 @@ private:
                 ROS_ERROR_STREAM("Failed to call service " << srv_move_to_object_name_);
                 while (!ingredients_info.empty())
                     ingredients_info.pop();
+                alternative_counter_ = 0;
                 state_ = State::AVAILABLE_TO_REQUEST;
                 return false;
             }
@@ -372,7 +405,7 @@ private:
         ROS_WARN_STREAM("Looking for ingredient: " << ingredient);
         if (!ingredient_instances.instance_names.empty())
         {
-            // Note: Possibly send all instances and decide on the closest one 
+            // Note: Possibly send all instances and decide on the closest one
             std::string instance = ingredient_instances.instance_names[0];
 
             ROS_WARN_STREAM("Moving to instance: " << instance);
@@ -386,6 +419,7 @@ private:
                 ROS_ERROR_STREAM("Failed to call service " << srv_move_to_object_name_);
                 while (!ingredients_info.empty())
                     ingredients_info.pop();
+                alternative_counter_ = 0;
                 state_ = State::AVAILABLE_TO_REQUEST;
                 return false;
             }
@@ -396,9 +430,9 @@ private:
                             << ". Looking for alternatives.");
 
             // Note: Possibly send all instances and decide on the closest one
-            std::string alternative = ingredient_instances.alternative_names[0];
+            std::string alternative = ingredient_instances.alternative_names[alternative_counter_];
 
-            ROS_INFO_STREAM("Moving to container: " << alternative);
+            ROS_WARN_STREAM("Moving to container: " << alternative);
             state_ = State::LOOKING_FOR_ALTERNATIVE;
 
             cocktail_bot::MoveToObject srv;
@@ -409,6 +443,7 @@ private:
                 ROS_ERROR_STREAM("Failed to call service " << srv_move_to_object_name_);
                 while (!ingredients_info.empty())
                     ingredients_info.pop();
+                alternative_counter_ = 0;
                 state_ = State::AVAILABLE_TO_REQUEST;
                 return false;
             }
@@ -453,7 +488,8 @@ int main(int argc, char *argv[]) {
 
     Reasoner myReasoner(nh);
 
-    ros::spin();
+    ros::MultiThreadedSpinner spinner(4);
+    spinner.spin();
 
     return 0;
 }

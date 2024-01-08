@@ -60,8 +60,8 @@ create_instance_from_class(Class, Instance) :-
 	get_class_path(Class, Class_path),
 
 	% assert/create the new instance
-	rdf_assert(Instance, rdf:type, Class_path),
-	write('New instance created: '), write(Instance), nl.
+	rdf_assert(Instance, rdf:type, Class_path).
+	% write('New instance created: '), write(Instance), nl.
 
 % This function will return the path of the class/instance given
 % get_class_path(+Class, ?Class_path)
@@ -124,11 +124,39 @@ get_instances_for_class(Class, Class_inst, Alt_inst) :-
 % @param Storage		storage class
 
 get_storage_for_class(Class, Storage) :-
-	( rdf_has(ssy236Ontology:freshStorage, rdfs:range, Class);
-	  rdf_has(ssy236Ontology:coldStorage, rdfs:range, Class);
-	  rdf_has(ssy236Ontology:condimentsStorage, rdfs:range, Class);
-	  rdf_has(ssy236Ontology:glassStorage, rdfs:range, Class) ),
+	% Check if the class has a storage property
+	rdf_has(ssy236Ontology:freshStorage, rdfs:range, Class),
+
+	% Get the storage class
 	rdf_has(ssy236Ontology:freshStorage, rdfs:domain, Storage), !.
+
+get_storage_for_class(Class, Storage) :-
+	% Check if the class has a storage property
+	rdf_has(ssy236Ontology:coldStorage, rdfs:range, Class),
+
+	% Get the storage class
+	rdf_has(ssy236Ontology:coldStorage, rdfs:domain, Storage), !.
+
+get_storage_for_class(Class, Storage) :-
+	% Check if the class has a storage property
+	rdf_has(ssy236Ontology:condimentsStorage, rdfs:range, Class),
+
+	% Get the storage class
+	rdf_has(ssy236Ontology:condimentsStorage, rdfs:domain, Storage), !.
+
+get_storage_for_class(Class, Storage) :-
+	% Check if the class has a storage property
+	rdf_has(ssy236Ontology:glassStorage, rdfs:range, Class),
+
+	% Get the storage class
+	rdf_has(ssy236Ontology:glassStorage, rdfs:domain, Storage), !.
+
+get_storage_for_class(Class, Storage) :-
+	% Check if the class has a storage property
+	rdf_has(ssy236Ontology:drinkStorage, rdfs:range, Class),
+
+	% Get the storage class
+	rdf_has(ssy236Ontology:drinkStorage, rdfs:domain, Storage), !.
 
 % If the storage class is not found, check the super class
 get_storage_for_class(Class, Storage) :-
