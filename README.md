@@ -69,8 +69,6 @@ For more details, please refer to the project's [Architecture and Design](./docs
 
 To get a local copy up and running follow these simple steps.
 
-For more details, please refer to the project's [Usage Guide](./docs/usage_guide.md).
-
 ### Prerequisites
 
 1. ROS (distro Noetic)
@@ -85,14 +83,25 @@ pip install -r ./src/cocktail_bot/requirements.txt
 
 1. Build the project:
 ```bash
-  ./src/cocktail_bot/scripts/build.sh
+./src/cocktail_bot/scripts/build.sh
 ```
 
-2. Run nodes TODO:
+2. Run simulation environment (Gazebo and Rviz):
 ```bash
-
+./src/cocktail_bot/scripts/gazebo.sh
 ```
 
+3. Run all nodes:
+```bash
+./src/cocktail_bot/scripts/all_nodes.sh
+```
+
+4. Make cocktail requests:
+```bash
+# The default cocktail is `margarita`.
+# In order to change request, the script file must be edited.
+./src/cocktail_bot/scripts/make_cocktail.sh
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

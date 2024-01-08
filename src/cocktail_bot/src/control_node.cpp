@@ -10,6 +10,8 @@
 #include "std_msgs/String.h"
 
 #define START_COCKTAIL "START_COCKTAIL"
+#define LINAR_VEL   0.3 // Linear velocity of the robot
+#define ANGULAR_VEL 1.1 // Angular velocity of the robot
 
 enum class State {
     IDLE,
@@ -49,9 +51,6 @@ private:
     
     State state_ = State::EXPLORING;   // Current state of the robot
 
-    double ANGULAR_VEL = 1.1;          // Angular velocity of the robot
-    double LINAR_VEL   = 0.1;          // Linear velocity of the robot
-
     geometry_msgs::Pose tiago_pose;    // Pose of the robot
     geometry_msgs::Pose target_pose;   // Pose of the target
     std::string target_name;           // Name of the target
@@ -66,7 +65,7 @@ public:
         ROS_WARN_STREAM("Created Controller Node");
 
         // Create points of interest
-        create_poi();
+        // TODO: uncomment create_poi();
 
         // Create publisher to send controls to gazebo
         topic_get_state_name_ = "/get_state";
@@ -310,7 +309,7 @@ private:
                                         std::pow(tiago_pose.position.y - target_pose.position.y, 2));
             
             // Check if distance to target is less than 1
-            if (distance < 1.) {
+            if (distance < 1.5) {
                 state_ = State::AVAILABLE_TO_REQUEST;
                 cocktail_bot::ArrivedToObject srv;
                 srv.request.object_name  = target_name;
