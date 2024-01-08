@@ -1,7 +1,7 @@
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier, plot_tree
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, ConfusionMatrixDisplay
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -47,16 +47,13 @@ accuracy = accuracy_score(y_test, predictions)
 print(f"Accuracy: {accuracy * 100:.2f}%")
 
 # Create a confusion matrix
-matrix = confusion_matrix(y_test, predictions)
-plt.figure(figsize=(10, 10))
-sns.heatmap(
-    matrix,
-    annot=True,
-    fmt="d",
+matrix = confusion_matrix(y_test, predictions, labels=classifer.classes_)
+fig, ax = plt.subplots(figsize=(10,10))
+disp = ConfusionMatrixDisplay(confusion_matrix=matrix,display_labels=classifer.classes_)
+disp.plot(
     cmap="Blues",
-    xticklabels=df["label"].unique(),
-    yticklabels=df["label"].unique(),
-)
+    xticks_rotation='vertical',
+    ax=ax)
 plt.title("Confusion Matrix")
 plt.xlabel("Predicted")
 plt.ylabel("Actual")
@@ -64,8 +61,9 @@ plt.savefig(PATH + "results/confusion_matrix.png")
 plt.close
 
 # Report
-classification_rep = classification_report(y_test, predictions)
-print(f"Classification Report:\n{classification_rep}")
+classification_rep = classification_report(y_test, predictions, output_dict=True)
+rep_df = pd.DataFrame(classification_rep).transpose()
+rep_df.to_csv(PATH + "results/classification_report.csv")
 
 # Decision tree structure
 plt.figure(figsize=(20, 10))

@@ -1238,9 +1238,9 @@
     
 
 
-    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#AnimalBodyPart -->
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#AnimalBody -->
 
-    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#AnimalBodyPart">
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#AnimalBody">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#SpatialThing"/>
     </owl:Class>
     
@@ -1299,6 +1299,14 @@
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Banana">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#EdibleFruit"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#BarCounter -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#BarCounter">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Furniture"/>
     </owl:Class>
     
 
@@ -1598,6 +1606,14 @@
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#CoffeeTable -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#CoffeeTable">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Table"/>
+    </owl:Class>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Coke -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Coke">
@@ -1700,6 +1716,14 @@
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Couch -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Couch">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Furniture"/>
+    </owl:Class>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cracker -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cracker">
@@ -1780,6 +1804,14 @@
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#CupboardTop">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Cupboard"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Curtain -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Curtain">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#SupportingStructure"/>
     </owl:Class>
     
 
@@ -1977,7 +2009,7 @@
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Elbow -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Elbow">
-        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#AnimalBodyPart"/>
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#AnimalBody"/>
     </owl:Class>
     
 
@@ -2029,6 +2061,14 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Fish">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Meat"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#FloorLamp -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#FloorLamp">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Furniture"/>
     </owl:Class>
     
 
@@ -2191,7 +2231,7 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Hand -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Hand">
-        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#AnimalBodyPart"/>
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#AnimalBody"/>
     </owl:Class>
     
 
@@ -2356,6 +2396,14 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Ketchup">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Condiment"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#KitchenTable -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#KitchenTable">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Table"/>
     </owl:Class>
     
 
@@ -2813,6 +2861,14 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
     
 
 
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Person -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Person">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#AnimalBody"/>
+    </owl:Class>
+    
+
+
     <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#PhysicalDevice -->
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#PhysicalDevice">
@@ -2890,6 +2946,14 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Pork">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Meat"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Poster -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Poster">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Furniture"/>
     </owl:Class>
     
 
@@ -3118,6 +3182,14 @@ Notable specializations of Event include Event_Localized, PhysicalEvent, Action,
 
     <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#ShelfTop">
         <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Shelf"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Sideboard -->
+
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Sideboard">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Furniture"/>
     </owl:Class>
     
 
@@ -3423,18 +3495,18 @@ Things that are timeless -- such as mathematical sets, Collections, and numbers 
     
 
 
-    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#TrashContainer -->
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#TrashBin -->
 
-    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#TrashContainer">
-        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#StorageDevice"/>
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#TrashBin">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#TrashContainer"/>
     </owl:Class>
     
 
 
-    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#Trash_bin -->
+    <!-- http://www.chalmers.se/ontologies/ssy236Ontology.owl#TrashContainer -->
 
-    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#Trash_bin">
-        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#TrashContainer"/>
+    <owl:Class rdf:about="http://www.chalmers.se/ontologies/ssy236Ontology.owl#TrashContainer">
+        <rdfs:subClassOf rdf:resource="http://www.chalmers.se/ontologies/ssy236Ontology.owl#StorageDevice"/>
     </owl:Class>
     
 
