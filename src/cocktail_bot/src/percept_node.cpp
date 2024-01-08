@@ -291,6 +291,7 @@ private:
     bool classifiable_object(std::string object_name)
     {
         auto it = map_objs_info_.find(object_name);
+        ROS_INFO_STREAM("Object [" << object_name << "] is classifiable? " << (it != map_objs_info_.end()));
         return (it != map_objs_info_.end());
     }
 

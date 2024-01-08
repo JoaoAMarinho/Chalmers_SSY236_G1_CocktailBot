@@ -257,7 +257,7 @@ private:
 
         if (state_ == State::LOOKING_FOR_INSTANCE)
         {
-            ROS_INFO_STREAM("Picked up instance [" << ingredient_instances.instance_names[0]
+            ROS_WARN_STREAM("Picked up instance [" << ingredient_instances.instance_names[0]
                             << "] of type [" << ingredient << "]");
             ingredients_info.pop();
         }
@@ -332,7 +332,7 @@ private:
             }
             else
             {
-                ROS_INFO_STREAM("Picked up instance [" << new_ingredient_instances[0]
+                ROS_WARN_STREAM("Picked up instance [" << new_ingredient_instances[0]
                                 << "] of type [" << ingredient << "]");
                 ingredients_info.pop();
             }
@@ -356,7 +356,7 @@ private:
             // TODO: Possibly send all instances and decide on the closest one 
             std::string instance = ingredient_instances.instance_names[0];
 
-            ROS_INFO_STREAM("Moving to instance: " << instance);
+            ROS_WARN_STREAM("Moving to instance: " << instance);
             state_ = State::LOOKING_FOR_INSTANCE;
 
             cocktail_bot::MoveToObject srv;

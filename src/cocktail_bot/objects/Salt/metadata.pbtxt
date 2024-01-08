@@ -1,0 +1,35 @@
+model {
+  file: "model.sdf"
+}
+name: "NUTS_BOLTS"
+description: "NUTS & BOLTS\nEncourage children to create forms and imaginary figures. Children will have fun assembling and reassembling the nuts and bolts transforming them into various mixes and matches."
+version: 1
+authors {
+  name: "Google"
+  email: "scanned-objects@google.com"
+}
+legal {
+  copyright: "Copyright 2020 Google LLC."
+  license: "Creative Commons Attribution 4.0 International"
+}
+annotations {
+  key: "brand"
+  value: "PlanToys"
+}
+annotations {
+  key: "mpn"
+  value: "5644"
+}
+annotations {
+  key: "sku"
+  value: "05644P00"
+}
+compatibilities {
+  name: "Gazebo"
+  version {
+    major: 11
+  }
+}
+categories {
+  first: "Toys"
+}

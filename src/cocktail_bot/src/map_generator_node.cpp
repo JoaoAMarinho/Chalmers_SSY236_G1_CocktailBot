@@ -92,7 +92,7 @@ private:
     bool srv_get_scene_obj_callback(cocktail_bot::GetSceneObjectList::Request  &req,
                                     cocktail_bot::GetSceneObjectList::Response &res)
     {
-        ROS_INFO_STREAM("Requested object: " << req.object_name);
+        ROS_DEBUG_STREAM("Requested pose of object: " << req.object_name);
 
         // If the requested obj name is "all", we should send all the available objects
         if (req.object_name == "all")
