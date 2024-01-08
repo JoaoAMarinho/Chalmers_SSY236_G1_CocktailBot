@@ -15,6 +15,7 @@
 #include <cocktail_bot/ArrivedToObject.h>
 
 #define START_COCKTAIL "START_COCKTAIL"
+#define BASE "BASE"
 
 enum class State {
     AVAILABLE_TO_REQUEST,
@@ -250,6 +251,13 @@ private:
     bool srv_arrived_to_object_callback(cocktail_bot::ArrivedToObject::Request  &req,
                                         cocktail_bot::ArrivedToObject::Response &res)
     {
+        if (req.object_name == BASE)
+        {
+            ROS_WARN_STREAM("Arrived to base, cocktail finished!");
+            state_ = State::AVAILABLE_TO_REQUEST;
+            return true;
+        }
+
         // Retrieve the first value from the queue
         auto iter = ingredients_info.top();
         std::string ingredient = iter.first;
@@ -341,8 +349,19 @@ private:
 
         if (ingredients_info.empty())
         {
-            ROS_WARN_STREAM("No more ingredients to find. Finished making cocktail!");
-            state_ = State::AVAILABLE_TO_REQUEST;
+            ROS_WARN_STREAM("No more ingredients to find, moving back to inital position.");
+            
+            // Call service to move robot to base
+            cocktail_bot::MoveToObject srv;
+            srv.request.object_name = BASE;
+            if (!client_move_to_object_.call(srv))
+            {
+                ROS_ERROR_STREAM("Failed to call service " << srv_move_to_object_name_);
+                while (!ingredients_info.empty())
+                    ingredients_info.pop();
+                state_ = State::AVAILABLE_TO_REQUEST;
+                return false;
+            }
             return true;
         }
 
@@ -353,7 +372,7 @@ private:
         ROS_WARN_STREAM("Looking for ingredient: " << ingredient);
         if (!ingredient_instances.instance_names.empty())
         {
-            // TODO: Possibly send all instances and decide on the closest one 
+            // Note: Possibly send all instances and decide on the closest one 
             std::string instance = ingredient_instances.instance_names[0];
 
             ROS_WARN_STREAM("Moving to instance: " << instance);
@@ -376,7 +395,7 @@ private:
             ROS_WARN_STREAM("No known instances for ingredient: " << ingredient 
                             << ". Looking for alternatives.");
 
-            // TODO: Possibly send all instances and decide on the closest one
+            // Note: Possibly send all instances and decide on the closest one
             std::string alternative = ingredient_instances.alternative_names[0];
 
             ROS_INFO_STREAM("Moving to container: " << alternative);

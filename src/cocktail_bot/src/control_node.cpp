@@ -10,15 +10,17 @@
 #include "std_msgs/String.h"
 
 #define START_COCKTAIL "START_COCKTAIL"
-#define LINAR_VEL   0.3 // Linear velocity of the robot
-#define ANGULAR_VEL 1.1 // Angular velocity of the robot
+#define BASE "BASE"
+#define LINAR_VEL   0.4 // Linear velocity of the robot
+#define ANGULAR_VEL 1.3 // Angular velocity of the robot
 
 enum class State {
     IDLE,
     EXPLORING,
     AVAILABLE_TO_REQUEST,
     STARTING_COCKTAIL,
-    MOVING_TO_OBJECT
+    MOVING_TO_OBJECT,
+    MOVING_TO_BASE
 };
 
 struct IngredientPoses {
@@ -51,6 +53,7 @@ private:
     
     State state_ = State::EXPLORING;   // Current state of the robot
 
+    geometry_msgs::Pose initial_pose;  // Initial pose of the robot
     geometry_msgs::Pose tiago_pose;    // Pose of the robot
     geometry_msgs::Pose target_pose;   // Pose of the target
     std::string target_name;           // Name of the target
@@ -65,7 +68,7 @@ public:
         ROS_WARN_STREAM("Created Controller Node");
 
         // Create points of interest
-        // TODO: uncomment create_poi();
+        create_poi();
 
         // Create publisher to send controls to gazebo
         topic_get_state_name_ = "/get_state";
@@ -154,9 +157,11 @@ private:
 
         pose.position.x = -0.5;
         pose.position.y = -0.5;
-        pose.orientation.x = 0.0;
-        pose.orientation.y = 0.0;
+        pose.orientation.x = M_PI*2;
+        pose.orientation.y = M_PI*2;
         poi_poses.push_back(pose);
+
+        initial_pose = poi_poses[3];
     }
 
     /**
@@ -182,6 +187,11 @@ private:
         if (req.object_name == START_COCKTAIL)
         {
             state_ = State::STARTING_COCKTAIL;
+            return true;
+        }
+        else if (req.object_name == BASE)
+        {
+            state_ = State::MOVING_TO_BASE;
             return true;
         }
 
@@ -247,8 +257,11 @@ private:
         // Calculate the angle to the target
         double theta = std::atan2(Dpose_tiago(1),Dpose_tiago(0));
 
-        controls_cmd.linear.x  = LINAR_VEL * d;
         controls_cmd.angular.z = ANGULAR_VEL * theta;
+        
+        // Regulate speed according to rotation command
+        controls_cmd.linear.x = controls_cmd.angular.z > 0.8 ? LINAR_VEL-0.2 : LINAR_VEL;
+        controls_cmd.linear.x *= d;
 
         return controls_cmd;
     }
@@ -301,7 +314,8 @@ private:
                 poi_index++;
             }
         }
-        else if (state_ == State::MOVING_TO_OBJECT) {
+        else if (state_ == State::MOVING_TO_OBJECT)
+        {
             controls_cmd = calculate_controls_to_target(target_pose);
             pub_controls_.publish(controls_cmd);
 
@@ -309,12 +323,24 @@ private:
                                         std::pow(tiago_pose.position.y - target_pose.position.y, 2));
             
             // Check if distance to target is less than 1
-            if (distance < 1.5) {
+            if (distance < 1.) {
                 state_ = State::AVAILABLE_TO_REQUEST;
                 cocktail_bot::ArrivedToObject srv;
                 srv.request.object_name  = target_name;
                 srv.request.current_pose = tiago_pose;
                 client_arrived_to_object_.call(srv);
+            }
+        }
+        else if (state_ == State::MOVING_TO_BASE)
+        {
+            controls_cmd = calculate_controls_to_target(initial_pose);
+            pub_controls_.publish(controls_cmd);
+
+            // Check if the robot has reached the point of interest
+            if (controls_cmd.linear.x == 0. && abs(controls_cmd.angular.z) < 0.02)
+            {
+                ROS_INFO_STREAM("Reached point of interest");
+                poi_index++;
             }
         }
     }

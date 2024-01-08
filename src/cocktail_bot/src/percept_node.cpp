@@ -233,7 +233,7 @@ private:
             double dy    = tiago_pose.position.y - obj_pose.position.y;
             double dist  = sqrt(pow(dx, 2)+ pow(dy, 2));
 
-            if (dist > 10) continue;
+            if (dist > 3) continue;
 
             if (state_ == "EXPLORING") {
                 if (classifiable_object(obj_name))
@@ -290,8 +290,7 @@ private:
 
     bool classifiable_object(std::string object_name)
     {
-        auto it = map_objs_info_.find(object_name);
-        ROS_INFO_STREAM("Object [" << object_name << "] is classifiable? " << (it != map_objs_info_.end()));
+        auto it = map_objs_info_.find(get_object_class_name(object_name));
         return (it != map_objs_info_.end());
     }
 

@@ -44,11 +44,6 @@ public:
         srv_get_scene_name_ = "get_scene_object_list";
         get_scene_obj_srv_ = nh.advertiseService(srv_get_scene_name_, &MapGenerator::srv_get_scene_obj_callback, this);
 
-        // Create service to check if object is close
-        // TODO: remove this service and respective srv file
-        // srv_is_close_to_object_name_ = "is_close_to_object";
-        // is_close_to_object_srv_ = nh.advertiseService(srv_is_close_to_object_name_, &MapGenerator::srv_is_close_to_object_callback, this);
-
         // Create timer to publish TFs
         tf_timer_ = nh.createTimer(ros::Duration(1), &MapGenerator::tf_timer_callback, this);
     };
