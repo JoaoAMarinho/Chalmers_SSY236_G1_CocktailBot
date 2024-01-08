@@ -1,0 +1,35 @@
+model {
+  file: "model.sdf"
+}
+name: "Nestl_Crunch_Girl_Scouts_Cookie_Flavors_Caramel_Coconut_78_oz_box"
+description: "Nestl\357\277\275 Crunch Girl Scouts Cookie Flavors, Caramel & Coconut - 7.8 oz box"
+version: 1
+authors {
+  name: "Google"
+  email: "scanned-objects@google.com"
+}
+legal {
+  copyright: "Copyright 2020 Google LLC."
+  license: "Creative Commons Attribution 4.0 International"
+}
+annotations {
+  key: "brand"
+  value: "Nestl\357\277\275"
+}
+annotations {
+  key: "gtin"
+  value: "00028000244026"
+}
+annotations {
+  key: "sku"
+  value: "00028000244026"
+}
+compatibilities {
+  name: "Gazebo"
+  version {
+    major: 11
+  }
+}
+categories {
+  first: "Consumer Goods"
+}

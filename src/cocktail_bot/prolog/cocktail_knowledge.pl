@@ -14,7 +14,7 @@
 % @param Cocktail_ingredients	list of ingredients
 
 cocktail_recipe(margarita,   ['Tequila', 'Lime', 'Salt', 'Ice']).
-cocktail_recipe(mojito,      ['Rum', 'Mint_leaves', 'Lime', 'Sugar', 'Soda', 'Ice']).
+cocktail_recipe(mojito,      ['Rum', 'Mint', 'Lime', 'Sugar', 'Soda', 'Ice']).
 cocktail_recipe(pina_colada, ['Rum', 'Coconut', 'Pineapple', 'Ice']).
 
 cocktail_recipe(strawberry_banana, ['Strawberry', 'Banana', 'Milk', 'Ice']).
