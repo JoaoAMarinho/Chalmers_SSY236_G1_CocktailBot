@@ -4,7 +4,7 @@ In our autonomous robot project, we have adopted a modular architecture inspired
 
 The following diagram illustrates the high-level structure of the project and the communication between its different components:
 
-![System Architecture](../images/architecture.jpeg)
+![System Architecture](../images/architecture.png)
 
 ## Perception
 
