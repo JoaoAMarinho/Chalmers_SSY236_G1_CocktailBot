@@ -7,6 +7,7 @@
 #include <unistd.h> // For Unix-based systems
 
 #include <rosprolog/rosprolog_client/PrologClient.h>
+#include "cocktail_bot/common_header.h"
 
 #include <cocktail_bot/MoveToObject.h>
 #include <cocktail_bot/MakeCocktail.h>
@@ -14,8 +15,6 @@
 #include <cocktail_bot/GetSceneObjectList.h>
 #include <cocktail_bot/ArrivedToObject.h>
 
-#define START_COCKTAIL "START_COCKTAIL"
-#define BASE "BASE"
 
 enum class State {
     AVAILABLE_TO_REQUEST,
@@ -360,7 +359,7 @@ private:
 
             double distance = sqrt(pow(current_pose.position.x - obj_pose.position.x, 2) +
                                    pow(current_pose.position.y - obj_pose.position.y, 2) );
-            if (distance > 1.5)
+            if (distance > SAFE_DISTANCE)
             {
                 ROS_ERROR_STREAM("Robot is not close enough to the new instance of type [" << ingredient << "]");
                 while (!ingredients_info.empty())

@@ -13,7 +13,7 @@
     <br />
     <a href="./docs/">Explore the docs</a>
     ·
-    <a href="./docs/">View Demo</a>
+    <a href="https://youtu.be/J_wFOuJC4kM">View Demo</a>
   </p>
 </div>
 

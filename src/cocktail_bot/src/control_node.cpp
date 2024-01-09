@@ -2,6 +2,7 @@
 
 #include <eigen3/Eigen/Dense>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include "cocktail_bot/common_header.h"
 
 #include <gazebo_msgs/ModelStates.h>
 #include <cocktail_bot/GetSceneObjectList.h>
@@ -9,8 +10,6 @@
 #include <cocktail_bot/ArrivedToObject.h>
 #include "std_msgs/String.h"
 
-#define START_COCKTAIL "START_COCKTAIL"
-#define BASE "BASE"
 #define LINAR_VEL   10. // Linear velocity of the robot
 #define ANGULAR_VEL 1.3 // Angular velocity of the robot
 
@@ -135,7 +134,7 @@ private:
 
         geometry_msgs::Pose pose;
         pose.position.x = 0.0;
-        pose.position.y = -3.0;
+        pose.position.y = -2.5;
         pose.position.z = 0.0;
         pose.orientation.x = 0.0;
         pose.orientation.y = M_PI;
@@ -253,7 +252,7 @@ private:
         
         // Calculate vector from the origin to the target
         Eigen::Vector2d Dpose_tiago = Rw_tiago * Dpose_w;
-        double d = (Dpose_tiago.norm() <= 1.3) ? 0.0: Dpose_tiago.norm();
+        double d = (Dpose_tiago.norm() < SAFE_DISTANCE) ? 0.0 : Dpose_tiago.norm();
 
         // Calculate the angle to the target
         double theta = std::atan2(Dpose_tiago(1),Dpose_tiago(0));
@@ -324,12 +323,10 @@ private:
         {
             controls_cmd = calculate_controls_to_target(target_pose);
             pub_controls_.publish(controls_cmd);
-
-            double distance = std::sqrt(std::pow(tiago_pose.position.x - target_pose.position.x, 2) +
-                                        std::pow(tiago_pose.position.y - target_pose.position.y, 2));
             
-            // Check if distance to target is less than 1
-            if (distance < 1.3) {
+            // Check if the robot has reached the target
+            if (controls_cmd.linear.x == 0. && abs(controls_cmd.angular.z) < 0.02)
+            {
                 state_ = State::AVAILABLE_TO_REQUEST;
                 cocktail_bot::ArrivedToObject srv;
                 srv.request.object_name  = target_name;
@@ -345,8 +342,11 @@ private:
             // Check if the robot has reached the point of interest
             if (controls_cmd.linear.x == 0. && abs(controls_cmd.angular.z) < 0.02)
             {
-                ROS_INFO_STREAM("Reached point of interest");
-                poi_index++;
+                state_ = State::AVAILABLE_TO_REQUEST;
+                cocktail_bot::ArrivedToObject srv;
+                srv.request.object_name  = BASE;
+                srv.request.current_pose = tiago_pose;
+                client_arrived_to_object_.call(srv);
             }
         }
     }
