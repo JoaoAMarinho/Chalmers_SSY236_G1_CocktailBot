@@ -8,35 +8,52 @@ The following diagram illustrates the high-level structure of the project and th
 
 ## Perception
 
+Collects information from the environment.
+
 **Communication:**
-- Gazebo Subscriber: Gathering knowledge about the nearby objects.
+- Gazebo Subscriber: Gather knowledge about the nearby objects.
 - Classifier Client: Object classification.
-- Update Client: Update object mapping
+- Update Object List Client: Update object instance mapping.
+- Update Knowledge Client: Update knowledge base instances.
+- Controller Subscriber: Get current robot state.
+
 
 ## Classification
+
+Identify the type of object.
 
 **Communication:**
 - Classifier Service: Classifies objects based on their characteristics.
 
 ## Reasoning
 
+Fulfills the cocktail request by telling the robot where to go.
+
 **Communication:**
 - Cocktail Service: Responsible to process the cocktail request.
+- Update Knowledge Service: Receives instances to update knowledge base.
 - Prolog Client: Interacts with prolog knowledge base.
-- Goto Client: Informs the controller which object to move to.
+- Move to Object Client: Informs the controller which object to move to.
+- Arrived to Object Service: Know when the robot has arrived to the target.
+- Get Object Client: Requests information (pose) about a certain object.
+
 
 ## Mapping
+
+Stores information about the object position.
 
 **Communication:**
 - Rviz Publisher: Broadcast object position to rviz node.
 - Get Object Service: Provides the requested object(s) poses.
-- Update Service: Updates the map with the new object and respective pose.
+- Update Object List Service: Updates the map with the new object and respective pose.
 
 ## Control
 
+Commands the robot to reach its destinations.
+
 **Communication:**
-- Goto Service: Responsible for updating the actions in order to move to the given 
-object.
-- Client Get Object: Requests information about the object pose.
-- Gazebo Subscriber: Receives information about the current robot position.
-- Action Publisher: Send movement commands to the robot.
+- Move to Object Service: Handles movement requests to the robot.
+- Get Object Client: Requests information about the object pose.
+- Gazebo Subscriber: Receives information about the current robot pose.
+- Controls Publisher: Publishes movement controls to the robot.
+- State Publisher: Publishes the current robot state.
