@@ -7,6 +7,7 @@
 #include <tf2/transform_datatypes.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include "cocktail_bot/common_header.h"
 
 #include <gazebo_msgs/ModelStates.h>
 #include <cocktail_bot/UpdateKnowledge.h>
@@ -158,7 +159,6 @@ private:
             srv_classifier.request.blue = std::stoi(values[7]);
             srv_classifier.request.alcohol = std::stoi(values[8]);
             map_objs_info_[values[0]] = srv_classifier;
-            ROS_INFO_STREAM("Object [" << values[0] << "] added to the map");
             values.clear();
         }
 
@@ -223,7 +223,7 @@ private:
                     continue;
                 update_node_knowledge(obj_name, obj_pose);
             }
-            else if (dist < 1.5)
+            else if (dist < SAFE_DISTANCE)
             {
                 update_node_knowledge(obj_name, obj_pose);
             }
@@ -257,7 +257,6 @@ private:
         if (client_map_generator_.call(srv_map_generator))
         {            
             v_seen_obj_.push_back(obj_name);
-            ROS_INFO_STREAM("Object [" << obj_name << "] added to the seen list");
         }
         else
         {
